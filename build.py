@@ -252,6 +252,7 @@ def generate_shell(page:Path,title:str,crumb:str,body:str,toc:list,course:Course
     demo_css=''.join(f'<link rel="stylesheet" href="{rel(page,p.with_suffix(".css"))}">' for p in scripts if p.with_suffix('.css').is_file())
     return f'''<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
+<link rel="icon" href="{rel(page,ROOT/'assets/robot-icon.svg')}" type="image/svg+xml">
 <title>{escape(title)}｜机器人控制理论笔记</title>
 <script>try{{document.documentElement.dataset.theme=localStorage.getItem('robot-note-theme')||'light'}}catch(e){{document.documentElement.dataset.theme='light'}}</script>
 <link rel="stylesheet" href="{stylesheet}">{demo_css}
