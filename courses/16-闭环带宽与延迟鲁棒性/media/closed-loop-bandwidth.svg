@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 230" role="img" aria-labelledby="title desc">
+<title id="title">从目标到输出的闭环带宽</title><desc id="desc">目标输入与测量反馈比较后形成误差，误差经过控制器和电机机械臂，输出位置被传感器测量后反馈。闭环带宽评价整条目标到输出链路的跟踪速度。</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0L9 4.5 0 9z" fill="#dbe7f0"/></marker></defs>
+<rect width="800" height="230" fill="#111a24"/>
+<g fill="none" stroke="#dbe7f0" stroke-width="2">
+<path d="M35 86H111" marker-end="url(#arrow)"/><circle cx="140" cy="86" r="27" fill="#172431"/>
+<path d="M167 86H225" marker-end="url(#arrow)"/><rect x="225" y="55" width="125" height="62" rx="7" fill="#1b2b39"/>
+<path d="M350 86H420" marker-end="url(#arrow)"/><rect x="420" y="55" width="135" height="62" rx="7" fill="#1b2b39"/>
+<path d="M555 86H735" marker-end="url(#arrow)"/>
+<path d="M705 86V177H595" marker-end="url(#arrow)"/><rect x="485" y="152" width="110" height="50" rx="7" fill="#1b2b39"/>
+<path d="M485 177H140V114" marker-end="url(#arrow)"/>
+</g>
+<g fill="#f1f5f8" font-family="Arial,sans-serif" text-anchor="middle">
+<text x="71" y="69" font-size="17">目标 R(s)</text><text x="140" y="82" font-size="19">+</text><text x="140" y="101" font-size="19">−</text>
+<text x="196" y="69" font-size="15">误差 E(s)</text>
+<text x="287" y="82" font-size="18">控制器 C(s)</text><text x="287" y="103" font-size="13" fill="#b7c6d2">例如 PID</text>
+<text x="487" y="82" font-size="18">对象 P(s)</text><text x="487" y="103" font-size="13" fill="#b7c6d2">电机与关节</text>
+<text x="645" y="69" font-size="17">实际位置 Y(s)</text>
+<text x="540" y="174" font-size="16">传感器 H(s)</text><text x="315" y="163" font-size="14" fill="#b7c6d2">测量反馈</text>
+<text x="398" y="222" font-size="14" fill="#73c8e8">闭环带宽：看目标变化多快时，输出开始明显跟不上</text>
+</g></svg>

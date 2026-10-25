@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" role="img" aria-labelledby="title desc">
+<title id="title">纯延迟造成的相位滞后随频率增加</title><desc id="desc">横轴角频率从零到五十弧度每秒，纵轴延迟相位。零延迟保持零度；十毫秒和三十毫秒延迟的相位曲线随频率线性向负方向下降，三十毫秒下降更快。</desc>
+<rect width="800" height="400" fill="#111a24"/>
+<g fill="none" stroke="#627384" stroke-width="1.4">
+<path d="M92 38V315H740"/>
+<path d="M92 80H740M92 140H740M92 200H740M92 260H740" stroke="#344352" stroke-dasharray="4 6"/>
+<path d="M222 38V315M352 38V315M482 38V315M612 38V315" stroke="#2b3946" stroke-dasharray="3 7"/>
+</g>
+<g fill="none" stroke-width="3">
+<path d="M92 80H740" stroke="#62c6a4"/>
+<path d="M92 80L740 189" stroke="#66b9e8"/>
+<path d="M92 80L740 307" stroke="#f1a45a"/>
+</g>
+<g fill="#e8eef3" font-family="Arial,sans-serif">
+<text x="92" y="28" font-size="19" font-weight="bold">延迟的相位损失：φd = −ωTd</text>
+<text x="50" y="85" font-size="14">0°</text><text x="39" y="145" font-size="14">−30°</text><text x="39" y="205" font-size="14">−60°</text><text x="39" y="265" font-size="14">−90°</text>
+<text x="92" y="340" font-size="14" text-anchor="middle">0</text><text x="222" y="340" font-size="14" text-anchor="middle">10</text><text x="352" y="340" font-size="14" text-anchor="middle">20</text><text x="482" y="340" font-size="14" text-anchor="middle">30</text><text x="612" y="340" font-size="14" text-anchor="middle">40</text><text x="740" y="340" font-size="14" text-anchor="middle">50</text>
+<text x="415" y="375" font-size="15" text-anchor="middle">角频率 ω (rad/s)</text><text x="25" y="180" font-size="14" text-anchor="middle" transform="rotate(-90 25 180)">额外相位 (deg)</text>
+<text x="570" y="69" font-size="14" fill="#62c6a4">Td = 0</text><text x="570" y="154" font-size="14" fill="#66b9e8">Td = 0.01 s</text><text x="570" y="282" font-size="14" fill="#f1a45a">Td = 0.03 s</text>
+</g></svg>

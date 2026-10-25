@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
+<title>第 9 课 · 数字 PID 实现 · 课程讲解｜机器人控制理论笔记</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('robot-note-theme')||'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
+<link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../courses/09-数字PID实现/demos/design.css">
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true,packages:{'[+]':['base','ams']}},svg:{fontCache:'local'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
+<script defer src="../assets/mathjax-tex-svg.js"></script><script defer src="../assets/theme.js"></script>
+</head><body>
+<header class="mast"><div class="mast-inner"><a class="brand" href="../index.html">机器人控制理论笔记 <small>持续更新 · 离线 HTML</small></a><div class="top-actions"><span class="top-indicator">已整理 33 课</span><button id="themeToggle" type="button" class="theme-toggle" aria-label="切换日间与夜间模式" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">夜间模式</span></button></div></div></header>
+<div class="layout">
+<aside class="toc" aria-label="本章目录"><div class="toc-label">本章目录</div><a class="h2" href="#section-1">一、控制器怎样在电脑里工作？</a><a class="h2" href="#section-2">二、采样周期与下标 $k$ 是什么意思？</a><a class="h2" href="#section-3">三、比例项：拿本次误差直接乘</a><a class="h2" href="#section-4">四、积分项：累计“多大的误差，持续了多久”</a><a class="h3" href="#section-5">4.1 积分为什么与时间有关？</a><a class="h3" href="#section-6">4.2 完整算一次</a><a class="h3" href="#section-7">4.3 为什么一定要乘时间间隔？</a><a class="h2" href="#section-8">五、速度估计：位置变化除以时间</a><a class="h3" href="#section-9">5.1 为什么这里用实际速度？</a><a class="h2" href="#section-10">把一次控制更新从输入算到力矩</a><a class="h3" href="#section-11">先预测，再展开核对</a><a class="h2" href="#section-12">六、交互实验一：时间间隔填错会怎样？</a><a class="h3" href="#section-13">6.1 积分会怎样？</a><a class="h3" href="#section-14">6.2 速度估计会怎样？</a><a class="h2" href="#section-15">七、为什么位置差分容易产生噪声？</a><a class="h2" href="#section-16">八、交互实验二：微分滤波怎样平滑速度？</a><a class="h2" href="#section-17">九、零阶保持：两次计算之间输出什么？</a><a class="h2" href="#section-18">十、把一次 PID 计算完整算出来</a><a class="h2" href="#section-19">十一、写成 C++ 控制循环</a><a class="h2" href="#section-20">十二、MATLAB 实验：观察噪声与滤波</a><a class="h2" href="#section-21">十三、练习与批改记录</a><a class="h3" href="#section-22">历史练习：已确认的提交与纠正</a><a class="h3" href="#section-23">本次重讲后的自测：尚未提交</a><a class="h2" href="#section-24">课程衔接与条件检查</a><a class="h3" href="#section-25">采样模型稳定不等于任意数值算法稳定</a></aside>
+<main class="main" id="content"><div class="eyebrow">第 9 课 / 课程讲解</div><div class="chapter-tabs"><a class="active" href="09-数字PID实现.html">课程讲解</a><a class="" href="../reviews/09-数字PID实现.html">复习笔记</a><a class="" href="../formulas/09-数字PID实现.html">公式手册</a></div><article class="prose"><h1>第 9 课：数字 PID 实现</h1>
+<blockquote>
+<p>第 2 周 · 第 3 节｜把连续控制公式变成一次次执行的程序：采样周期、离散积分、速度差分、微分滤波和零阶保持。</p>
+</blockquote>
+<p>这页依据本对话中重新讲解的第 9 课与已确认的练习记录重写。原有完整历史讲稿未恢复，不将补写内容当作原始逐字记录。</p>
+<p>本课围绕一个问题：<strong>电脑每隔一小段时间算一次控制量，积分、速度和 PID 应当怎样计算？</strong> 以后读机器人控制工程中的定时循环，这些步骤会反复出现。</p>
+<h2 id="section-1">一、控制器怎样在电脑里工作？</h2>
+<p>仍用电机带动关节。目标角度为 $q_d$，实际角度为 $q$，误差：</p>
+<p>$$
+e=q_d-q
+$$</p>
+<p>前面学过的控制器可以写为：</p>
+<p>$$
+\boxed{\tau(t)=K_pe(t)+K_iz(t)-K_d\dot q(t)},\qquad
+z(t)=\int_0^t e(\lambda)\,d\lambda
+$$</p>
+<table>
+<thead>
+<tr>
+<th>量</th>
+<th>意义</th>
+<th>在关节控制里的单位</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$q,q_d$</td>
+<td>实际角度、目标角度</td>
+<td>rad</td>
+</tr>
+<tr>
+<td>$e$</td>
+<td>位置误差</td>
+<td>rad</td>
+</tr>
+<tr>
+<td>$z$</td>
+<td>累计误差</td>
+<td>rad·s</td>
+</tr>
+<tr>
+<td>$\dot q$</td>
+<td>实际角速度</td>
+<td>rad/s</td>
+</tr>
+<tr>
+<td>$\tau$</td>
+<td>输出力矩</td>
+<td>N·m</td>
+</tr>
+<tr>
+<td>$K_p$</td>
+<td>比例增益</td>
+<td>N·m/rad</td>
+</tr>
+<tr>
+<td>$K_i$</td>
+<td>积分增益</td>
+<td>N·m/(rad·s)</td>
+</tr>
+<tr>
+<td>$K_d$</td>
+<td>速度反馈增益</td>
+<td>N·m·s/rad</td>
+</tr>
+</tbody>
+</table>
+<p>这里微分反馈用实际速度，所以前面带负号：正在向正方向运动，就给一部分负力矩，提供阻尼。</p>
+<p>连续公式允许时间不断变化，电脑却只能一次次读取数据和执行计算。一次计算通常包括：</p>
+<ol>
+<li>读取传感器或状态估计模块提供的位置。</li>
+<li>计算目标与实际位置之差。</li>
+<li>更新累计误差，估计并滤波速度。</li>
+<li>计算力矩，结合限幅与抗饱和处理。</li>
+<li>发送指令，保存本次状态供下次使用。</li>
+</ol>
+<h2 id="section-2">二、采样周期与下标 $k$ 是什么意思？</h2>
+<p>假设每隔 10 ms 执行一次：</p>
+<p>$$
+T_s=10\,\mathrm{ms}=0.01\,\mathrm{s},\qquad f_s=\frac1{T_s}=100\,\mathrm{Hz}
+$$</p>
+<p>程序在 0、0.01、0.02、0.03 s 等时刻读取位置。$k$ 表示第几次采样，$q_k$ 是本次位置，$q_{k-1}$ 是上次位置：</p>
+<p>$$
+q_k=q(kT_s),\qquad e_k=q_{d,k}-q_k
+$$</p>
+<p>例如 $q_5$ 对应 $t=5T_s$ 的采样值。下标只是编号，真正的时间间隔由 $T_s$ 决定。</p>
+<p>固定周期算法常用预设 $T_s$。若循环间隔存在明显变化，需要根据所用算法和数据时间戳正确处理实际间隔。代码里的 <code>dt</code> 一般使用秒，不能把 10 ms 直接填成 10。</p>
+<h2 id="section-3">三、比例项：拿本次误差直接乘</h2>
+<p>目标为 1 rad，本次实际位置为 0.8 rad，则：</p>
+<p>$$
+e_k=1-0.8=0.2\,\mathrm{rad}
+$$</p>
+<p>如果 $K_p=10\,\mathrm{N\cdot m/rad}$：</p>
+<p>$$
+\tau_{P,k}=K_pe_k=2\,\mathrm{N\cdot m}
+$$</p>
+<div class="code-panel"><div class="code-label">CPP</div><pre class="code-highlight"><code><span class="kt">double</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">target</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">position</span><span class="p">;</span>
+<span class="kt">double</span><span class="w"> </span><span class="n">torque_p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Kp</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">error</span><span class="p">;</span></code></pre></div>
+<p>比例项只使用本次误差，不需要记住过去。积分与微分则需要保存历史数据。</p>
+<h2 id="section-4">四、积分项：累计“多大的误差，持续了多久”</h2>
+<h3 id="section-5">4.1 积分为什么与时间有关？</h3>
+<p>假设误差一直为 0.5 rad，持续 0.02 s，新增积分量是 $0.5\times0.02=0.01$ rad·s；持续 2 s，则为 1 rad·s。同样的误差，持续越久，累计量越大。</p>
+<p>从图形看，积分是误差曲线与时间轴之间的有符号面积。误差为正时增加，误差为负时减少。</p>
+<p>程序每次只能处理一小段时间。把本次误差近似看成这段时间内的代表值，就得到一块小矩形：</p>
+<p>$$
+\Delta z_k\approx e_kT_s
+$$</p>
+<p>于是本次累计量为：</p>
+<p>$$
+\boxed{z_k=z_{k-1}+e_kT_s}
+$$</p>
+<p>可以把 $z$ 想成账户余额：旧余额加上本次新增量；误差为负时，本次新增量也为负，并非所有历史误差都按绝对值累加。</p>
+<h3 id="section-6">4.2 完整算一次</h3>
+<p>给定：</p>
+<p>$$
+z_{k-1}=0.3\,\mathrm{rad\cdot s},\quad
+e_k=0.5\,\mathrm{rad},\quad T_s=0.02\,\mathrm{s}
+$$</p>
+<p>则：</p>
+<p>$$
+z_k=0.3+0.5\times0.02=0.31\,\mathrm{rad\cdot s}
+$$</p>
+<p>若 $K_i=4$，积分力矩为：</p>
+<p>$$
+\tau_{I,k}=K_iz_k=1.24\,\mathrm{N\cdot m}
+$$</p>
+<p>$z_k$ 是累计误差，$K_iz_k$ 才是积分力矩，别把两者混成一个变量的意义。</p>
+<div class="code-panel"><div class="code-label">CPP</div><pre class="code-highlight"><code><span class="n">integral</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">dt</span><span class="p">;</span>
+<span class="kt">double</span><span class="w"> </span><span class="n">torque_i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Ki</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">integral</span><span class="p">;</span></code></pre></div>
+<h3 id="section-7">4.3 为什么一定要乘时间间隔？</h3>
+<p>误差始终为 1 rad，持续 1 秒：</p>
+<table>
+<thead>
+<tr>
+<th>周期</th>
+<th>每秒次数</th>
+<th>每次新增量</th>
+<th>一秒合计</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.01 s</td>
+<td>100</td>
+<td>0.01 rad·s</td>
+<td>1 rad·s</td>
+</tr>
+<tr>
+<td>0.001 s</td>
+<td>1000</td>
+<td>0.001 rad·s</td>
+<td>1 rad·s</td>
+</tr>
+</tbody>
+</table>
+<p>使用正确时间间隔，同一段真实时间、同样的误差，积分量应基本相同。若只写 <code>integral += error</code>，循环频率提高 10 倍，一秒积分量也变为 10 倍，控制器行为就变了。</p>
+<p>积分近似并非只有这一种形式；本课先掌握矩形近似的物理意义与单位，不必同时背多种离散公式。</p>
+<h2 id="section-8">五、速度估计：位置变化除以时间</h2>
+<p>传感器或状态估计模块若能提供可靠速度，可以直接使用；只有位置时，可以用相邻采样差分：</p>
+<p>$$
+\boxed{v_k=\frac{q_k-q_{k-1}}{T_s}}
+$$</p>
+<p>它估计的是相邻两次采样之间的平均角速度，不是每一时刻的精确瞬时速度。</p>
+<p>例如：</p>
+<p>$$
+q_{k-1}=0.40,\quad q_k=0.43,\quad T_s=0.01
+$$</p>
+<p>得到：</p>
+<p>$$
+v_k=\frac{0.43-0.40}{0.01}=3\,\mathrm{rad/s}
+$$</p>
+<p>若 $K_d=2$：</p>
+<p>$$
+\tau_{D,k}=-K_dv_k=-6\,\mathrm{N\cdot m}
+$$</p>
+<p>正方向运动，微分反馈提供负方向力矩，帮助抑制过快运动。它不保证任意时刻总力矩都反向，因为总力矩还包含比例和积分。</p>
+<div class="code-panel"><div class="code-label">CPP</div><pre class="code-highlight"><code><span class="kt">double</span><span class="w"> </span><span class="n">velocity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">position</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">previous_position</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">dt</span><span class="p">;</span>
+<span class="c1">// 算完后再保存；如果先覆盖，差值就会变为零。</span>
+<span class="n">previous_position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">position</span><span class="p">;</span></code></pre></div>
+<h3 id="section-9">5.1 为什么这里用实际速度？</h3>
+<p>固定目标时，$\dot q_d=0$，于是：</p>
+<p>$$
+\dot e=\dot q_d-\dot q=-\dot q
+$$</p>
+<p>因此 $K_d\dot e$ 与 $-K_d\dot q$ 相同。移动目标时，两种写法不完全相同；对实际位置作微分反馈，还能避免目标阶跃直接造成误差微分的尖峰。本课统一使用 $-K_dv_k$。</p>
+<h2 id="section-10">把一次控制更新从输入算到力矩</h2>
+<p>给定相邻两次采样位置0.30、0.31 rad，采样周期0.01 s，目标0.50 rad。旧积分状态为0.02 rad·s，当前采用先更新积分再输出的约定：</p>
+<p>$$
+\begin{aligned}
+e_k&amp;=0.50-0.31=0.19\ \mathrm{rad},\\
+\hat v_k&amp;=(0.31-0.30)/0.01=1.0\ \mathrm{rad/s},\\
+z_k&amp;=0.02+0.19(0.01)=0.0219\ \mathrm{rad\,s}.
+\end{aligned}
+$$</p>
+<p>若 Kp=10、Ki=2、Kd=0.5，未限幅输出为：</p>
+<p>$$\tau_k=10(0.19)+2(0.0219)-0.5(1)=1.4438\ \mathrm{N\,m}.$$</p>
+<p>若软件误把周期填成0.1 s，差分速度会被算成0.1，积分会变成0.039，输出变为1.928 N·m。同一组传感器读数，因为时间单位错了，控制器表现就变了。</p>
+<p>图中展示零阶保持：每次算出命令后保持到下次更新；点间连成光滑曲线只是绘图习惯，真实数字命令在两次计算之间不会自动插值。</p>
+<p><img alt="本课数值例子的定量对照图" src="../courses/09-数字PID实现/media/worked-example-dark.svg"/></p>
+<p><strong>读图与操作</strong>：先用 timing 模式对比真实周期与设定周期，再用 filter 模式比较差分噪声和滤波滞后；一次只改变一个因素。</p>
+<p><strong>使用条件</strong>：位置以 rad、时间以 s；此例无滤波、无饱和，用后向差分估速，矩形法更新积分。</p>
+<h3 id="section-11">先预测，再展开核对</h3>
+<p>如果程序采用先输出、再更新积分，本次力矩应是多少？</p>
+<details><summary>查看思路与答案</summary>
+<p>本次使用旧积分0.02，输出为1.44 N·m；两种更新约定都要前后一致，并明确一次采样延迟的含义。</p>
+</details>
+<h2 id="section-12">六、交互实验一：时间间隔填错会怎样？</h2>
+<p>真实循环从 10 ms 改成 1 ms，但代码仍写 <code>dt = 0.01</code>：每次真实只过 0.001 s，却按 0.01 s 计算。</p>
+<div class="demo" data-demo="design" data-mode="timing"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>
+<p>演示使用恒定误差 0.5 rad、匀速运动 2 rad/s，使时间缩放的影响容易比较；它不是带反馈的完整关节运动仿真。</p>
+<h3 id="section-13">6.1 积分会怎样？</h3>
+<p>真实每次该加 $e_k\times0.001$，程序却加 $e_k\times0.01$。每次多 10 倍，单位真实时间内累计也快约 10 倍。</p>
+<h3 id="section-14">6.2 速度估计会怎样？</h3>
+<p>真实速度为 2 rad/s，1 ms 内位置变化是：</p>
+<p>$$
+\Delta q=2\times0.001=0.002\,\mathrm{rad}
+$$</p>
+<p>代码用错误的分母：</p>
+<p>$$
+v_k=\frac{0.002}{0.01}=0.2\,\mathrm{rad/s}
+$$</p>
+<p>只剩真实值的十分之一，微分阻尼相应算小。</p>
+<table>
+<thead>
+<tr>
+<th>计算内容</th>
+<th>填入的时间间隔过大</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>积分 $e_k\,dt$</td>
+<td>累计得过多</td>
+</tr>
+<tr>
+<td>速度 $\Delta q/dt$</td>
+<td>估计得过小</td>
+</tr>
+</tbody>
+</table>
+<p>机械系统本身没有因此自动慢十倍，是控制器低估了速度。之后错误控制量会继续影响机械运动，所以闭环后果不能只靠这两个比例就全部预测出来。</p>
+<h2 id="section-15">七、为什么位置差分容易产生噪声？</h2>
+<p>关节没动，真实位置一直为 1 rad，但两次测量是 1.000 与 1.002 rad：</p>
+<p>$$
+v_k=\frac{1.002-1.000}{0.001}=2\,\mathrm{rad/s}
+$$</p>
+<p>实际没动，程序却估计有 2 rad/s 的速度。下次读数降回来，可能又估计成负速度，微分力矩就正负跳动。</p>
+<p>对相同大小的测量差值，分母越小，估计速度波动越大。但不能故意把 <code>dt</code> 填大来压噪声，否则真实速度也会算错。</p>
+<p>更严格地说，微分倾向于放大高频变化；对于相邻独立测量噪声，其差分速度的噪声幅度还与采样周期有关。因此采样更快并不自动意味着估计更平滑。</p>
+<h2 id="section-16">八、交互实验二：微分滤波怎样平滑速度？</h2>
+<p>一阶低通滤波常写为：</p>
+<p>$$
+\boxed{\hat v_k=\alpha\hat v_{k-1}+(1-\alpha)v_k^{raw}}
+$$</p>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>意义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$v_k^{raw}$</td>
+<td>本次直接差分速度</td>
+</tr>
+<tr>
+<td>$\hat v_{k-1}$</td>
+<td>上次滤波速度</td>
+</tr>
+<tr>
+<td>$\hat v_k$</td>
+<td>本次滤波速度</td>
+</tr>
+<tr>
+<td>$\alpha$</td>
+<td>保留旧结果的权重，通常在 0～1 之间</td>
+</tr>
+</tbody>
+</table>
+<p>若上次滤波值为 0，原始速度突然为 2，取 $\alpha=0.9$：</p>
+<p>$$
+\hat v_k=0.9\times0+0.1\times2=0.2
+$$</p>
+<p>结果只变到 0.2，没有直接跳到 2。但如果真实速度确实突然增加，滤波结果也要经过几次更新才能跟上。</p>
+<p>常用参数关系：</p>
+<p>$$
+\boxed{\alpha=\frac{\tau_f}{\tau_f+T_s}}
+$$</p>
+<p>$\tau_f$ 为滤波时间常数，单位秒。固定 $T_s$ 时，$\tau_f$ 越大，$\alpha$ 越接近 1，通常更平滑但跟随更慢。</p>
+<div class="demo" data-demo="design" data-mode="filter"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>
+<p>建议先把噪声设为零，调大时间常数，单独看滞后；再增加噪声，看原始差分的尖峰和平滑后的曲线。演示采用确定的高频测量扰动，重复调整时便于比较。</p>
+<p>第 12 课会用频率响应解释：低通为什么削弱快速变化，同时带来滞后。</p>
+<h2 id="section-17">九、零阶保持：两次计算之间输出什么？</h2>
+<p>每 10 ms 算一次力矩。第一次算出 2 N·m，就保持到下一次；下一次算出 1.8 N·m，再保持 1.8。</p>
+<p>这叫零阶保持（Zero-Order Hold，ZOH）：</p>
+<p>$$
+\tau(t)=\tau_k,\qquad kT_s\le t&lt;(k+1)T_s
+$$</p>
+<p>保持的是指令，电机和关节在这段时间里仍持续运动。就像每隔一会调整一次水龙头，两次调整之间开度不变，水仍然在流。</p>
+<p>ZOH 处理的是两次更新之间的输出方式；正确 <code>dt</code> 处理的是计算所用时间间隔。ZOH 不会替你修复积分或差分的时间错误。</p>
+<h2 id="section-18">十、把一次 PID 计算完整算出来</h2>
+<p>给定：</p>
+<p>$$
+\begin{aligned}
+q_d&amp;=1.0\,\mathrm{rad},&amp;q_k&amp;=0.8\,\mathrm{rad}\\
+q_{k-1}&amp;=0.79\,\mathrm{rad},&amp;T_s&amp;=0.01\,\mathrm{s}\\
+z_{k-1}&amp;=0.1\,\mathrm{rad\cdot s}
+\end{aligned}
+$$</p>
+<p>取 $K_p=10,K_i=4,K_d=2$，暂时不加滤波和输出限幅：</p>
+<p>$$
+\begin{aligned}
+e_k&amp;=1.0-0.8=0.2\\
+z_k&amp;=0.1+0.2\times0.01=0.102\\
+v_k&amp;=(0.8-0.79)/0.01=1\\
+\tau_{P,k}&amp;=10\times0.2=2\\
+\tau_{I,k}&amp;=4\times0.102=0.408\\
+\tau_{D,k}&amp;=-2\times1=-2\\
+\tau_k&amp;=2+0.408-2=0.408\,\mathrm{N\cdot m}
+\end{aligned}
+$$</p>
+<p>关节还没到目标，比例项继续推；关节已经向目标运动，微分项提供阻尼，避免冲得太快。三个部分会相加，不能只看某一项判断总力矩方向。</p>
+<h2 id="section-19">十一、写成 C++ 控制循环</h2>
+<p>下面是用于理解状态更新的最小控制器。实际接入电机还需要输出限幅、第 8 课的抗积分饱和，以及传感器与异常状态处理。</p>
+<div class="code-panel"><div class="code-label">CPP</div><pre class="code-highlight"><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdexcept&gt;</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">DigitalPID</span><span class="w"> </span><span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+<span class="w">    </span><span class="n">DigitalPID</span><span class="p">(</span><span class="kt">double</span><span class="w"> </span><span class="n">kp</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">ki</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">kd</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">tau_f</span><span class="p">)</span>
+<span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">kp_</span><span class="p">(</span><span class="n">kp</span><span class="p">),</span><span class="w"> </span><span class="n">ki_</span><span class="p">(</span><span class="n">ki</span><span class="p">),</span><span class="w"> </span><span class="n">kd_</span><span class="p">(</span><span class="n">kd</span><span class="p">),</span><span class="w"> </span><span class="n">tau_f_</span><span class="p">(</span><span class="n">tau_f</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tau_f</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.0</span><span class="p">)</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">invalid_argument</span><span class="p">(</span><span class="s">"tau_f must be nonnegative"</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">update</span><span class="p">(</span><span class="kt">double</span><span class="w"> </span><span class="n">target</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">position</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">dt</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">dt</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0</span><span class="p">))</span>
+<span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">invalid_argument</span><span class="p">(</span><span class="s">"dt must be positive"</span><span class="p">);</span>
+
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">target</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">position</span><span class="p">;</span>
+<span class="w">        </span><span class="n">integral_</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">dt</span><span class="p">;</span>
+
+<span class="w">        </span><span class="kt">double</span><span class="w"> </span><span class="n">raw_velocity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0</span><span class="p">;</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">first_sample_</span><span class="p">)</span>
+<span class="w">            </span><span class="n">raw_velocity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">position</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">previous_position_</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">dt</span><span class="p">;</span>
+
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tau_f_</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="n">tau_f_</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">dt</span><span class="p">);</span>
+<span class="w">        </span><span class="n">filtered_velocity_</span><span class="w"> </span><span class="o">=</span>
+<span class="w">            </span><span class="n">alpha</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">filtered_velocity_</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="mf">1.0</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">alpha</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">raw_velocity</span><span class="p">;</span>
+
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">torque</span><span class="w"> </span><span class="o">=</span>
+<span class="w">            </span><span class="n">kp_</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">ki_</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">integral_</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">kd_</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">filtered_velocity_</span><span class="p">;</span>
+
+<span class="w">        </span><span class="n">previous_position_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">position</span><span class="p">;</span>
+<span class="w">        </span><span class="n">first_sample_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">torque</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="k">private</span><span class="o">:</span>
+<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">kp_</span><span class="p">,</span><span class="w"> </span><span class="n">ki_</span><span class="p">,</span><span class="w"> </span><span class="n">kd_</span><span class="p">,</span><span class="w"> </span><span class="n">tau_f_</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">integral_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">previous_position_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">filtered_velocity_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">first_sample_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="p">};</span></code></pre></div>
+<p>三个成员变量需要跨循环保存：积分余额、上次位置、上次滤波速度。如果每次都把积分清零，它就失去长期累计作用；如果丢掉上次位置，就不能算相邻采样速度。</p>
+<p>第一次采样尚无历史位置，代码将差分速度初始化为零，避免拿当前位置减一个任意的“初始零值”。这不代表第一次采样时真实速度必然为零。</p>
+<h2 id="section-20">十二、MATLAB 实验：观察噪声与滤波</h2>
+<p>以下代码不依赖 Control System Toolbox：</p>
+<div class="code-panel"><div class="code-label">MATLAB</div><pre class="code-highlight"><code><span class="nb">clc</span><span class="p">;</span>
+<span class="nb">clear</span><span class="p">;</span>
+<span class="n">close</span><span class="w"> </span><span class="s">all</span><span class="p">;</span>
+<span class="nb">rng</span><span class="p">(</span><span class="mi">8</span><span class="p">);</span><span class="w">                         </span><span class="c">% 固定随机种子，便于比较</span>
+<span class="n">Ts</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.001</span><span class="p">;</span>
+<span class="n">t</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="n">Ts</span><span class="p">:</span><span class="mi">2</span><span class="p">;</span>
+<span class="n">q_true</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="nb">pi</span><span class="o">*</span><span class="n">t</span><span class="p">);</span>
+<span class="n">v_true</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="nb">pi</span><span class="o">*</span><span class="nb">cos</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="nb">pi</span><span class="o">*</span><span class="n">t</span><span class="p">);</span>
+
+<span class="n">q_measured</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">q_true</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">0.002</span><span class="o">*</span><span class="nb">randn</span><span class="p">(</span><span class="nb">size</span><span class="p">(</span><span class="n">t</span><span class="p">));</span>
+<span class="n">v_raw</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="w"> </span><span class="nb">diff</span><span class="p">(</span><span class="n">q_measured</span><span class="p">)</span><span class="o">/</span><span class="n">Ts</span><span class="p">];</span>
+
+<span class="n">tau_f</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.02</span><span class="p">;</span>
+<span class="nb">alpha</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">tau_f</span><span class="o">/</span><span class="p">(</span><span class="n">tau_f</span><span class="o">+</span><span class="n">Ts</span><span class="p">);</span>
+<span class="n">v_filtered</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">zeros</span><span class="p">(</span><span class="nb">size</span><span class="p">(</span><span class="n">t</span><span class="p">));</span>
+<span class="k">for</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">2</span><span class="p">:</span><span class="nb">numel</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+<span class="w">    </span><span class="n">v_filtered</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">alpha</span><span class="o">*</span><span class="n">v_filtered</span><span class="p">(</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">...</span>
+<span class="w">                  </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="nb">alpha</span><span class="p">)</span><span class="o">*</span><span class="n">v_raw</span><span class="p">(</span><span class="n">k</span><span class="p">);</span>
+<span class="k">end</span>
+
+<span class="nb">figure</span><span class="p">;</span>
+<span class="nb">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span>
+<span class="nb">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">q_true</span><span class="p">,</span><span class="s">'b'</span><span class="p">);</span>
+<span class="n">hold</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">q_measured</span><span class="p">,</span><span class="s">'Color'</span><span class="p">,[</span><span class="mf">0.6</span><span class="w"> </span><span class="mf">0.6</span><span class="w"> </span><span class="mf">0.6</span><span class="p">]);</span>
+<span class="n">grid</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">xlabel</span><span class="p">(</span><span class="s">'时间 (s)'</span><span class="p">);</span>
+<span class="nb">ylabel</span><span class="p">(</span><span class="s">'位置 (rad)'</span><span class="p">);</span>
+<span class="nb">legend</span><span class="p">(</span><span class="s">'真实位置'</span><span class="p">,</span><span class="s">'测量位置'</span><span class="p">);</span>
+
+<span class="nb">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">);</span>
+<span class="nb">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">v_raw</span><span class="p">,</span><span class="s">'Color'</span><span class="p">,[</span><span class="mf">0.75</span><span class="w"> </span><span class="mf">0.75</span><span class="w"> </span><span class="mf">0.75</span><span class="p">]);</span>
+<span class="n">hold</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">v_true</span><span class="p">,</span><span class="s">'b'</span><span class="p">,</span><span class="s">'LineWidth'</span><span class="p">,</span><span class="mf">1.2</span><span class="p">);</span>
+<span class="nb">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">v_filtered</span><span class="p">,</span><span class="s">'r'</span><span class="p">,</span><span class="s">'LineWidth'</span><span class="p">,</span><span class="mf">1.2</span><span class="p">);</span>
+<span class="n">grid</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">xlabel</span><span class="p">(</span><span class="s">'时间 (s)'</span><span class="p">);</span>
+<span class="nb">ylabel</span><span class="p">(</span><span class="s">'速度 (rad/s)'</span><span class="p">);</span>
+<span class="nb">legend</span><span class="p">(</span><span class="s">'原始差分'</span><span class="p">,</span><span class="s">'真实速度'</span><span class="p">,</span><span class="s">'滤波速度'</span><span class="p">);</span></code></pre></div>
+<p>先将噪声幅度 0.002 改为 0，看滤波本身的滞后；再恢复噪声，比较速度差分的尖峰。将 $\tau_f$ 从 0.005 改到 0.1，观察平滑与滞后的权衡。初始几次的估计还受初始化影响。</p>
+<h2 id="section-21">十三、练习与批改记录</h2>
+<h3 id="section-22">历史练习：已确认的提交与纠正</h3>
+<ol>
+<li>$z_{k-1}=0.3,e_k=0.5,T_s=0.02$：你写了 $0.3+0.5\times0.02$，正确，结果 0.31。</li>
+<li>位置从 0.40 到 0.43 rad，间隔 0.01 s：你选 B，即 3 rad/s，正确。</li>
+<li>你指出位置差分容易放大噪声，正确。更准确地说，快速测量波动会变为明显的速度尖峰。</li>
+<li>真实循环从 10 ms 改到 1 ms，代码仍用 0.01：你提到积分饱和和 ZOH。需要补全：单位真实时间内积分约快 10 倍；速度估计只剩真实值的十分之一，微分阻尼约小 10 倍。机械运动本身并不自动慢十倍，ZOH 不能代替正确 dt。</li>
+</ol>
+<h3 id="section-23">本次重讲后的自测：尚未提交</h3>
+<ol>
+<li>误差保持 0.5 rad，持续 1 秒。分别取 $T_s=0.01$ s 与 0.001 s，正确计算的新增积分量各是多少？</li>
+<li>关节没动但测量有小波动，为什么差分速度可能很抖？增大 $K_d$ 后对输出的影响怎样？</li>
+<li>积分更新、速度估计、零阶保持分别负责什么？</li>
+</ol>
+<p>将答案发回课程对话，我会逐题批改。批改后等待你明确说“下一课”。</p>
+<h2 id="section-24">课程衔接与条件检查</h2>
+<h3 id="section-25">采样模型稳定不等于任意数值算法稳定</h3>
+<p>标量 $\dot x=-2x$ 的精确离散模型为 $x_{k+1}=e^{-2T_s}x_k$。前向 Euler 则近似为 $x_{k+1}=(1-2T_s)x_k$，只有 0&lt;Ts&lt;1 s 时满足离散渐近稳定条件。Ts=1.2 s 时，近似模型系数 −1.4 导致发散，而真实连续模型稳定。</p>
+<p>因此要区分控制采样、模型离散化与仿真积分步长。C++ 循环还应保存上一周期误差和积分状态，明确当前测量、当前计算和下一次执行各发生在何时。</p>
+<p><strong>自查</strong>：如果程序采用先输出、再更新积分，本次力矩应是多少？</p>
+</article><div class="page-footer"><a href="08-PID整定与抗饱和.html">← 上一课</a><a href="10-Routh稳定判据.html">下一课 →</a></div></main>
+<nav class="sidebar" aria-label="课程总目录"><div class="sidebar-title">课程总目录</div><a class="nav-home" href="../index.html">首页 · 课程目录</a><div class="group-label">按学习阶段浏览</div><details class="nav-phase" open><summary><span class="phase-title">阶段 0｜经典控制基础与补桥</span><small>第 1–16 课：反馈、PID、稳定性与频域设计</small></summary><details class="nav-course"><summary><span class="course-number">第 1 课</span><span class="course-title">反馈控制与第一个 PD 控制器</span></summary><div class="nav-course-links"><a class="" href="01-反馈控制.html">讲解</a><a class="" href="../reviews/01-反馈控制.html">复习</a><a class="" href="../formulas/01-反馈控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 2 课</span><span class="course-title">二阶系统、阻尼比与超调量</span></summary><div class="nav-course-links"><a class="" href="02-二阶系统.html">讲解</a><a class="" href="../reviews/02-二阶系统.html">复习</a><a class="" href="../formulas/02-二阶系统.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 3 课</span><span class="course-title">拉普拉斯变换与传递函数</span></summary><div class="nav-course-links"><a class="" href="03-传递函数.html">讲解</a><a class="" href="../reviews/03-传递函数.html">复习</a><a class="" href="../formulas/03-传递函数.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 4 课</span><span class="course-title">极点、零点与系统稳定性</span></summary><div class="nav-course-links"><a class="" href="04-极点与零点.html">讲解</a><a class="" href="../reviews/04-极点与零点.html">复习</a><a class="" href="../formulas/04-极点与零点.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 5 课</span><span class="course-title">时间响应指标与 PD 控制器参数设计</span></summary><div class="nav-course-links"><a class="" href="05-PD参数设计.html">讲解</a><a class="" href="../reviews/05-PD参数设计.html">复习</a><a class="" href="../formulas/05-PD参数设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 6 课</span><span class="course-title">积分控制、稳态误差与积分饱和</span></summary><div class="nav-course-links"><a class="" href="06-积分控制.html">讲解</a><a class="" href="../reviews/06-积分控制.html">复习</a><a class="" href="../formulas/06-积分控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 7 课</span><span class="course-title">稳态误差与终值定理</span></summary><div class="nav-course-links"><a class="" href="07-稳态误差与终值定理.html">讲解</a><a class="" href="../reviews/07-稳态误差与终值定理.html">复习</a><a class="" href="../formulas/07-稳态误差与终值定理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 8 课</span><span class="course-title">PID 参数整定与积分抗饱和</span></summary><div class="nav-course-links"><a class="" href="08-PID整定与抗饱和.html">讲解</a><a class="" href="../reviews/08-PID整定与抗饱和.html">复习</a><a class="" href="../formulas/08-PID整定与抗饱和.html">公式</a></div></details><details class="nav-course" open><summary><span class="course-number">第 9 课</span><span class="course-title">数字 PID 实现</span></summary><div class="nav-course-links"><a class="active" href="09-数字PID实现.html">讲解</a><a class="" href="../reviews/09-数字PID实现.html">复习</a><a class="" href="../formulas/09-数字PID实现.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 10 课</span><span class="course-title">Routh稳定判据</span></summary><div class="nav-course-links"><a class="" href="10-Routh稳定判据.html">讲解</a><a class="" href="../reviews/10-Routh稳定判据.html">复习</a><a class="" href="../formulas/10-Routh稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 11 课</span><span class="course-title">根轨迹与增益设计</span></summary><div class="nav-course-links"><a class="" href="11-根轨迹与增益设计.html">讲解</a><a class="" href="../reviews/11-根轨迹与增益设计.html">复习</a><a class="" href="../formulas/11-根轨迹与增益设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 12 课</span><span class="course-title">频率响应与 Bode 图</span></summary><div class="nav-course-links"><a class="" href="12-频率响应与Bode图.html">讲解</a><a class="" href="../reviews/12-频率响应与Bode图.html">复习</a><a class="" href="../formulas/12-频率响应与Bode图.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 13 课</span><span class="course-title">Nyquist 稳定判据——沿着曲线判断闭环稳定性</span></summary><div class="nav-course-links"><a class="" href="13-Nyquist稳定判据.html">讲解</a><a class="" href="../reviews/13-Nyquist稳定判据.html">复习</a><a class="" href="../formulas/13-Nyquist稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 14 课</span><span class="course-title">增益裕度与相位裕度</span></summary><div class="nav-course-links"><a class="" href="14-增益裕度与相位裕度.html">讲解</a><a class="" href="../reviews/14-增益裕度与相位裕度.html">复习</a><a class="" href="../formulas/14-增益裕度与相位裕度.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 15 课</span><span class="course-title">超前与滞后校正</span></summary><div class="nav-course-links"><a class="" href="15-超前与滞后校正.html">讲解</a><a class="" href="../reviews/15-超前与滞后校正.html">复习</a><a class="" href="../formulas/15-超前与滞后校正.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 16 课</span><span class="course-title">闭环带宽、延迟与鲁棒性</span></summary><div class="nav-course-links"><a class="" href="16-闭环带宽与延迟鲁棒性.html">讲解</a><a class="" href="../reviews/16-闭环带宽与延迟鲁棒性.html">复习</a><a class="" href="../formulas/16-闭环带宽与延迟鲁棒性.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 1｜数学与模型衔接</span><small>第 17–19 课：矩阵、特征值、传递函数与状态空间</small></summary><details class="nav-course"><summary><span class="course-number">第 17 课</span><span class="course-title">矩阵与状态向量——现代控制的数学语言</span></summary><div class="nav-course-links"><a class="" href="17-矩阵与状态向量.html">讲解</a><a class="" href="../reviews/17-矩阵与状态向量.html">复习</a><a class="" href="../formulas/17-矩阵与状态向量.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 18 课</span><span class="course-title">特征值与系统动态</span></summary><div class="nav-course-links"><a class="" href="18-特征值与系统动态.html">讲解</a><a class="" href="../reviews/18-特征值与系统动态.html">复习</a><a class="" href="../formulas/18-特征值与系统动态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 19 课</span><span class="course-title">传递函数到状态空间</span></summary><div class="nav-course-links"><a class="" href="19-传递函数到状态空间.html">讲解</a><a class="" href="../reviews/19-传递函数到状态空间.html">复习</a><a class="" href="../formulas/19-传递函数到状态空间.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 2｜现代线性控制核心</span><small>第 20–31 课：状态响应、反馈、LQR、估计与离散综合</small></summary><details class="nav-course"><summary><span class="course-number">第 20 课</span><span class="course-title">状态空间基础</span></summary><div class="nav-course-links"><a class="" href="20-状态空间基础.html">讲解</a><a class="" href="../reviews/20-状态空间基础.html">复习</a><a class="" href="../formulas/20-状态空间基础.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 21 课</span><span class="course-title">相平面与状态轨迹</span></summary><div class="nav-course-links"><a class="" href="21-相平面与状态轨迹.html">讲解</a><a class="" href="../reviews/21-相平面与状态轨迹.html">复习</a><a class="" href="../formulas/21-相平面与状态轨迹.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 22 课</span><span class="course-title">连续系统离散化</span></summary><div class="nav-course-links"><a class="" href="22-连续系统离散化.html">讲解</a><a class="" href="../reviews/22-连续系统离散化.html">复习</a><a class="" href="../formulas/22-连续系统离散化.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 23 课</span><span class="course-title">可控性与可达状态</span></summary><div class="nav-course-links"><a class="" href="23-可控性与可达状态.html">讲解</a><a class="" href="../reviews/23-可控性与可达状态.html">复习</a><a class="" href="../formulas/23-可控性与可达状态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 24 课</span><span class="course-title">线性系统的Lyapunov稳定性</span></summary><div class="nav-course-links"><a class="" href="24-线性系统的Lyapunov稳定性.html">讲解</a><a class="" href="../reviews/24-线性系统的Lyapunov稳定性.html">复习</a><a class="" href="../formulas/24-线性系统的Lyapunov稳定性.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 25 课</span><span class="course-title">状态反馈与极点配置</span></summary><div class="nav-course-links"><a class="" href="25-状态反馈与极点配置.html">讲解</a><a class="" href="../reviews/25-状态反馈与极点配置.html">复习</a><a class="" href="../formulas/25-状态反馈与极点配置.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 26 课</span><span class="course-title">LQR最优状态反馈</span></summary><div class="nav-course-links"><a class="" href="26-LQR最优状态反馈.html">讲解</a><a class="" href="../reviews/26-LQR最优状态反馈.html">复习</a><a class="" href="../formulas/26-LQR最优状态反馈.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 27 课</span><span class="course-title">状态反馈的参考跟踪</span></summary><div class="nav-course-links"><a class="" href="27-状态反馈的参考跟踪.html">讲解</a><a class="" href="../reviews/27-状态反馈的参考跟踪.html">复习</a><a class="" href="../formulas/27-状态反馈的参考跟踪.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 28 课</span><span class="course-title">可观测性与输出信息</span></summary><div class="nav-course-links"><a class="" href="28-可观测性与输出信息.html">讲解</a><a class="" href="../reviews/28-可观测性与输出信息.html">复习</a><a class="" href="../formulas/28-可观测性与输出信息.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 29 课</span><span class="course-title">Luenberger状态观测器</span></summary><div class="nav-course-links"><a class="" href="29-Luenberger状态观测器.html">讲解</a><a class="" href="../reviews/29-Luenberger状态观测器.html">复习</a><a class="" href="../formulas/29-Luenberger状态观测器.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 30 课</span><span class="course-title">观测器反馈与分离原理</span></summary><div class="nav-course-links"><a class="" href="30-观测器反馈与分离原理.html">讲解</a><a class="" href="../reviews/30-观测器反馈与分离原理.html">复习</a><a class="" href="../formulas/30-观测器反馈与分离原理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 31 课</span><span class="course-title">离散状态反馈与综合设计</span></summary><div class="nav-course-links"><a class="" href="31-离散状态反馈与综合设计.html">讲解</a><a class="" href="../reviews/31-离散状态反馈与综合设计.html">复习</a><a class="" href="../formulas/31-离散状态反馈与综合设计.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 3｜非线性控制进阶</span><small>后续计划：Lyapunov、LaSalle 与非线性控制</small></summary><div class="phase-coming">该阶段课程将在学习进度推进后加入。</div></details><details class="nav-phase"><summary><span class="phase-title">阶段 4｜机器人与车辆实践</span><small>控制器综合设计、MATLAB 与 C++ 实现</small></summary><details class="nav-course"><summary><span class="course-number">第 32 课</span><span class="course-title">机器人控制器综合设计</span></summary><div class="nav-course-links"><a class="" href="32-机器人控制器综合设计.html">讲解</a><a class="" href="../reviews/32-机器人控制器综合设计.html">复习</a><a class="" href="../formulas/32-机器人控制器综合设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 33 课</span><span class="course-title">MATLAB 仿真与 C++ 控制循环</span></summary><div class="nav-course-links"><a class="" href="33-MATLAB仿真与C++控制循环.html">讲解</a><a class="" href="../reviews/33-MATLAB仿真与C++控制循环.html">复习</a><a class="" href="../formulas/33-MATLAB仿真与C++控制循环.html">公式</a></div></details></details></nav>
+</div><script data-demo-module="demo-core">
+/* 共享交互基础设施：课程页面按需加载各 demo 的普通脚本，兼容 file:// 离线打开。 */
+(function(){
+  'use strict';
+  const registry = new Map();
+  const DEG = 180/Math.PI;
+  function color(light,dark){return document.documentElement.dataset.theme==='dark'?dark:light;}
+  function poleRoots(J,Kp,Kd){
+    const d=Kd*Kd-4*J*Kp;
+    return d>=0 ? [{re:(-Kd+Math.sqrt(d))/(2*J),im:0},{re:(-Kd-Math.sqrt(d))/(2*J),im:0}]
+      : [{re:-Kd/(2*J),im:Math.sqrt(-d)/(2*J)},{re:-Kd/(2*J),im:-Math.sqrt(-d)/(2*J)}];
+  }
+  function solve(J,Kp,Kd){
+    let q=0,v=0,t=0;const dt=.008,out=[],qr=Math.PI/2;
+    const rhs=(a,b)=>[b,(Kp*(qr-a)-Kd*b)/J];
+    for(let i=0;i<=750;i++){
+      out.push([t,q*DEG]);
+      const a=rhs(q,v),b=rhs(q+dt*a[0]/2,v+dt*a[1]/2),c=rhs(q+dt*b[0]/2,v+dt*b[1]/2),d=rhs(q+dt*c[0],v+dt*c[1]);
+      q+=dt*(a[0]+2*b[0]+2*c[0]+d[0])/6;
+      v+=dt*(a[1]+2*b[1]+2*c[1]+d[1])/6;t+=dt;
+    }
+    return out;
+  }
+  function canvasReady(canvas){
+    const w=Math.max(canvas.clientWidth,260),h=canvas.clientHeight||245,dpr=window.devicePixelRatio||1;
+    canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+    const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return {ctx,w,h};
+  }
+  function mountPD(node, options){
+    const J0=Number(node.dataset.j||1),Kp0=Number(node.dataset.kp||16),Kd0=Number(node.dataset.kd??8);
+    node.innerHTML=`<p class="demo-title">${options.title}</p><p class="demo-note">理想单关节模型，目标 90°、初始角度及速度为零；本地浏览器计算。</p>
+      <div class="demo-controls">
+      <div class="control"><label>J（kg·m²）<output data-out="j"></output></label><input data-param="j" type="range" min="0.5" max="5" step="0.5"></div>
+      <div class="control"><label>Kp（N·m/rad）<output data-out="kp"></output></label><input data-param="kp" type="range" min="2" max="36" step="2"></div>
+      <div class="control"><label>Kd（N·m·s/rad）<output data-out="kd"></output></label><input data-param="kd" type="range" min="0" max="24" step="1"></div>
+      </div><canvas class="demo-canvas" role="img" aria-label="互动数学模型的曲线"></canvas>
+      <div class="demo-meta" aria-live="polite"></div><div class="demo-caption">${options.caption}</div>`;
+    const inputs={};node.querySelectorAll('input').forEach(el=>inputs[el.dataset.param]=el);
+    inputs.j.value=String(J0);inputs.kp.value=String(Kp0);inputs.kd.value=String(Kd0);
+    const canvas=node.querySelector('canvas'),meta=node.querySelector('.demo-meta');
+    function draw(){
+      const J=+inputs.j.value,Kp=+inputs.kp.value,Kd=+inputs.kd.value;
+      for(const name of ['j','kp','kd'])node.querySelector('[data-out="'+name+'"]').textContent=inputs[name].value;
+      const z=Kd/(2*Math.sqrt(J*Kp)),wn=Math.sqrt(Kp/J);
+      const details=options.render(canvas,J,Kp,Kd);
+      meta.replaceChildren();
+      for(const str of [`阻尼比 ζ = ${z.toFixed(3)}`,`ωn = ${wn.toFixed(3)} rad/s`,...details]){
+        const s=document.createElement('span');s.textContent=str;meta.appendChild(s);
+      }
+    }
+    Object.values(inputs).forEach(el=>el.addEventListener('input',draw));
+    window.addEventListener('robot-theme-changed',draw);
+    if(typeof ResizeObserver!=='undefined')new ResizeObserver(draw).observe(canvas);
+    else window.addEventListener('resize',draw);
+    draw();
+  }
+  window.NoteDemos={register(name,mount){
+    if(registry.has(name))throw new Error('重复的演示名称：'+name);
+    registry.set(name,mount);
+  }, utils:{color,poleRoots,solve,canvasReady,mountPD}};
+  function boot(){
+    document.querySelectorAll('.demo[data-demo]').forEach(node=>{
+      const name=node.dataset.demo;
+      try{
+        if(!registry.has(name))throw new Error(`模块「${name}」没有注册`);
+        registry.get(name)(node,window.NoteDemos.utils);
+      }catch(err){
+        node.textContent=`演示加载失败（${name}）：${err.message}。正文和公式仍可阅读。`;
+        node.classList.add('demo-error');console.error(err);
+      }
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+
+</script>
+<script data-demo-module="design">
+/* 第 9 课：时间间隔缩放、差分噪声与低通滤波。 */
+(function () {
+  'use strict';
+  window.NoteDemos.register('design', function(node,u) {
+    const filter=node.dataset.mode==='filter';
+    node.classList.add('digital-lab');
+    node.innerHTML='<p class="demo-title">'+(filter?'实验二 · 差分噪声与滤波':'实验一 · 真实周期与代码 dt')+'</p>'+
+      '<p class="demo-note">'+(filter?'真实位置 q=sin(2πt)，蓝线为真实速度，灰线为含测量扰动的差分速度，橙线为滤波速度。':'恒定误差 e=0.5 rad，真实匀速运动 v=2 rad/s。蓝线为正确积分，橙线为代码 dt 下的积分；这不是完整闭环仿真。')+'</p>'+
+      '<div class="demo-controls">'+
+      '<div class="control"><label>真实采样周期 <output data-o="ts"></output></label><input data-p="ts" aria-label="真实采样周期（毫秒）" type="range" min="1" max="50" step="1" value="'+(filter?'5':'10')+'"></div>'+
+      (filter?
+        '<div class="control"><label>测量扰动幅度 <output data-o="noise"></output></label><input data-p="noise" aria-label="测量扰动幅度（毫弧度）" type="range" min="0" max="10" step="0.5" value="2"></div>'+
+        '<div class="control"><label>滤波时间常数 <output data-o="tau"></output></label><input data-p="tau" aria-label="滤波时间常数（毫秒）" type="range" min="0" max="200" step="5" value="20"></div>':
+        '<div class="control"><label>代码采用 dt <output data-o="dt"></output></label><input data-p="dt" aria-label="代码采用的时间间隔（毫秒）" type="range" min="1" max="50" step="1" value="10"></div>')+
+      '</div>'+
+      (filter?'':'<div class="lab-presets"><button type="button" data-case="wrong">重现：真实 1 ms，代码 10 ms</button><button type="button" data-case="correct">将代码 dt 设为真实周期</button></div>')+
+      '<canvas class="demo-canvas" role="img" aria-label="'+(filter?'真实、差分与滤波速度随时间变化':'正确与错误时间间隔的积分随时间变化')+'"></canvas>'+
+      '<div class="demo-meta" aria-live="polite"></div><p class="demo-caption" data-status></p>';
+    const inputs=Object.fromEntries([...node.querySelectorAll('input')].map(x=>[x.dataset.p,x]));
+    const canvas=node.querySelector('canvas');
+    function draw() {
+      const ts=+inputs.ts.value/1000;
+      node.querySelector('[data-o="ts"]').textContent=inputs.ts.value+' ms';
+      const {ctx,w,h}=u.canvasReady(canvas);ctx.clearRect(0,0,w,h);
+      const ink=u.color('#344050','#dbe5ef'),grid=u.color('#e1e7ed','#3b4758');
+      let series=[],ymin=0,ymax=1,xmax=1,messages=[],caption='';
+      if(filter) {
+        const noise=+inputs.noise.value/1000,tau=+inputs.tau.value/1000,alpha=tau/(tau+ts);
+        node.querySelector('[data-o="noise"]').textContent=noise.toFixed(4)+' rad';
+        node.querySelector('[data-o="tau"]').textContent=inputs.tau.value+' ms';
+        const raw=[],truth=[],smooth=[];let prev=0,vf=0;
+        for(let k=0;k<=Math.floor(2/ts);k++){
+          const t=k*ts;
+          const q=Math.sin(2*Math.PI*t)+noise*(.65*Math.sin(2*Math.PI*137*t)+.35*Math.sin(2*Math.PI*43*t));
+          const vr=k?(q-prev)/ts:0;vf=alpha*vf+(1-alpha)*vr;
+          raw.push([t,vr]);truth.push([t,2*Math.PI*Math.cos(2*Math.PI*t)]);smooth.push([t,vf]);prev=q;
+        }
+        const peak=Math.max(7,...raw.map(p=>Math.abs(p[1])))*1.08;
+        ymin=-peak;ymax=peak;xmax=2;
+        series=[[raw,u.color('#b2b8bf','#667385'),1],[truth,'#3889cf',2],[smooth,'#d88b2b',2]];
+        messages=['采样频率 '+(1/ts).toFixed(0)+' Hz','α = '+alpha.toFixed(4),'真实速度峰值 6.283 rad/s'];
+        caption=noise===0?'噪声为零：重点看离散差分与滤波造成的幅值、相位变化。':
+          '固定高频测量扰动，便于重复比较。先减小噪声，再增大滤波时间常数，看平滑与滞后；第一点受初始化影响。';
+      } else {
+        const dt=+inputs.dt.value/1000,ratio=dt/ts;
+        node.querySelector('[data-o="dt"]').textContent=inputs.dt.value+' ms';
+        const count=Math.floor(1/ts),correct=[],code=[];
+        for(let k=0;k<=count;k++){correct.push([k*ts,.5*k*ts]);code.push([k*ts,.5*k*dt]);}
+        series=[[correct,'#3889cf',2],[code,'#d88b2b',2]];ymax=Math.max(.6,.5*count*dt*1.12);
+        messages=['真实运动速度 2 rad/s','代码估计速度 '+(2/ratio).toFixed(3)+' rad/s',
+          '积分累计倍率 '+ratio.toFixed(2),'正确新增积分 '+(.5*count*ts).toFixed(3)+' rad·s',
+          '代码新增积分 '+(.5*count*dt).toFixed(3)+' rad·s'];
+        caption=Math.abs(ratio-1)<1e-8?'时间一致：两条积分线重合，速度估计与真实匀速一致。':
+          '时间不一致：积分倍率为 dt/Ts，速度估计倍率为 Ts/dt。机械真实速度没有因此自动改变。';
+      }
+      const r={x:52,y:25,w:w-69,h:h-66};
+      const X=x=>r.x+x/xmax*r.w,Y=y=>r.y+r.h-(y-ymin)/(ymax-ymin)*r.h;
+      ctx.font='11px sans-serif';ctx.strokeStyle=grid;ctx.lineWidth=1;
+      for(let i=0;i<=4;i++){
+        const y=ymin+(ymax-ymin)*i/4;
+        ctx.beginPath();ctx.moveTo(r.x,Y(y));ctx.lineTo(r.x+r.w,Y(y));ctx.stroke();
+        ctx.fillStyle=ink;ctx.textAlign='right';ctx.fillText(y.toFixed(1),r.x-7,Y(y)+4);
+        const x=xmax*i/4;ctx.beginPath();ctx.moveTo(X(x),r.y);ctx.lineTo(X(x),r.y+r.h);ctx.stroke();
+        ctx.textAlign='center';ctx.fillText(x.toFixed(2),X(x),r.y+r.h+16);
+      }
+      ctx.textAlign='left';ctx.fillText(filter?'速度 (rad/s)':'累计误差 (rad·s)',10,15);
+      ctx.textAlign='center';ctx.fillText('真实时间 (s)',w/2,h-5);ctx.textAlign='left';
+      ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();
+      series.forEach(([points,color,width])=>{
+        ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();
+        points.forEach(([x,y],i)=>i?ctx.lineTo(X(x),Y(y)):ctx.moveTo(X(x),Y(y)));ctx.stroke();
+      });ctx.restore();
+      const meta=node.querySelector('.demo-meta');meta.replaceChildren();
+      messages.forEach(t=>{const el=document.createElement('span');el.textContent=t;meta.appendChild(el);});
+      node.querySelector('[data-status]').textContent=caption;
+    }
+    Object.values(inputs).forEach(x=>x.addEventListener('input',draw));
+    node.querySelectorAll('[data-case]').forEach(b=>b.addEventListener('click',()=>{
+      if(b.dataset.case==='wrong'){inputs.ts.value='1';inputs.dt.value='10';}
+      else inputs.dt.value=inputs.ts.value;draw();
+    }));
+    window.addEventListener('robot-theme-changed',draw);
+    if(typeof ResizeObserver!=='undefined')new ResizeObserver(draw).observe(node);
+    else window.addEventListener('resize',draw);
+    draw();
+  });
+})();
+
+</script></body></html>

@@ -1,0 +1,6 @@
+.sampling-lab .demo-controls{grid-template-columns:repeat(3,minmax(0,1fr))}
+.sampling-lab canvas{height:270px;margin:10px 0;background:var(--paper)}
+.sampling-lab .demo-meta{font-variant-numeric:tabular-nums}
+@media(max-width:620px){.sampling-lab .demo-controls{grid-template-columns:1fr}.sampling-lab canvas{height:225px}}
+
+.prose img[src$="state-space-dark.svg"],.prose img[src$="controller-pipeline-dark.svg"],.prose img[src$="design-checklist-dark.svg"],.prose img[src$="sample-hold-dark.svg"],.prose img[src$="control-loop-dark.svg"]{display:block;width:100%;height:auto;max-width:880px;margin:18px auto;border-radius:5px}

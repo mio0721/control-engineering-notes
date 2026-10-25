@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
+<title>第 1 课 · 反馈控制与第一个 PD 控制器 · 课程讲解｜机器人控制理论笔记</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('robot-note-theme')||'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
+<link rel="stylesheet" href="../assets/style.css">
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true,packages:{'[+]':['base','ams']}},svg:{fontCache:'local'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
+<script defer src="../assets/mathjax-tex-svg.js"></script><script defer src="../assets/theme.js"></script>
+</head><body>
+<header class="mast"><div class="mast-inner"><a class="brand" href="../index.html">机器人控制理论笔记 <small>持续更新 · 离线 HTML</small></a><div class="top-actions"><span class="top-indicator">已整理 33 课</span><button id="themeToggle" type="button" class="theme-toggle" aria-label="切换日间与夜间模式" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">夜间模式</span></button></div></div></header>
+<div class="layout">
+<aside class="toc" aria-label="本章目录"><div class="toc-label">本章目录</div><a class="h2" href="#section-1">1. 从一个单关节机械臂开始</a><a class="h2" href="#section-2">2. 把机械臂写成动力学方程</a><a class="h2" href="#section-3">3. P 控制：根据位置误差施加力矩</a><a class="h2" href="#section-4">4. PD 控制：再用速度反馈让它停下</a><a class="h2" href="#section-5">到达目标位置时，关节为什么还需要刹车？</a><a class="h3" href="#section-6">先预测，再展开核对</a><a class="h2" href="#section-7">5. 互动演示：观察 P 与 PD</a><a class="h2" href="#section-8">6. MATLAB：自己实现两种控制器</a><a class="h2" href="#section-9">7. 本课检查</a><a class="h2" href="#section-10">课程衔接与条件检查</a><a class="h3" href="#section-11">反馈信号、扰动与传感器不是一条通道</a></aside>
+<main class="main" id="content"><div class="eyebrow">第 1 课 / 课程讲解</div><div class="chapter-tabs"><a class="active" href="01-反馈控制.html">课程讲解</a><a class="" href="../reviews/01-反馈控制.html">复习笔记</a><a class="" href="../formulas/01-反馈控制.html">公式手册</a></div><article class="prose"><h1>第 1 课：反馈控制与第一个 PD 控制器</h1>
+<blockquote>
+<p>本课目标：区分开环与闭环；理解反馈误差；从单关节动力学认识 P 控制、PD 控制；知道为什么“角度到位”不等于“已经停住”。</p>
+</blockquote>
+<h2 id="section-1">1. 从一个单关节机械臂开始</h2>
+<p>我们要让一个机械臂关节从 <strong>0° 转到 90°，最终稳定停在 90°</strong>。这个任务涉及三个不同问题：如何让它开始运动、如何判断是否到达目标、如何使它不再运动。</p>
+<p>如果只给电机一个固定力矩并持续一段时间，这属于<strong>开环控制</strong>。我们执行预先决定的动作，却不利用实际角度纠正偏差。负载、摩擦、外界推力稍有变化，实际结果就可能偏离预期。更重要的是，力矩变为零也不意味着角速度立刻变为零。</p>
+<p><strong>闭环控制</strong>把测量到的输出反馈给控制器，持续比较目标与实际状态，修正控制输入：</p>
+<p><img alt="单位负反馈信号示意图" src="../courses/01-反馈控制/media/feedback-dark.svg"/></p>
+<p>定义位置误差为：</p>
+<p>$$
+e(t)=q_d(t)-q(t)
+$$</p>
+<ul>
+<li>$q_d$：目标关节角度，单位通常为 rad；</li>
+<li>$q$：实际关节角度，单位通常为 rad；</li>
+<li>$e$：目标与实际角度之间的差，单位为 rad。</li>
+</ul>
+<p>例如目标为 90°，实际为 60°，误差为 +30°；实际为 100°，误差为 −10°。不过，<strong>只知道角度误差还不够</strong>，因为一个关节可能在目标位置仍有较大的角速度。</p>
+<h2 id="section-2">2. 把机械臂写成动力学方程</h2>
+<p>为了把核心问题讲清楚，先假设：只有一个旋转关节；在水平面运动，不受重力转矩影响；忽略摩擦、电机电气过程和力矩饱和；转动惯量保持常数。模型为：</p>
+<p>$$
+J\ddot q=\tau
+$$</p>
+<p>这对应直线运动中的 $F=ma$：力矩决定角加速度。</p>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>物理意义</th>
+<th>常用单位</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$J$</td>
+<td>绕关节轴的等效转动惯量</td>
+<td>kg·m²</td>
+</tr>
+<tr>
+<td>$q$</td>
+<td>关节角度</td>
+<td>rad</td>
+</tr>
+<tr>
+<td>$\dot q$</td>
+<td>关节角速度</td>
+<td>rad/s</td>
+</tr>
+<tr>
+<td>$\ddot q$</td>
+<td>关节角加速度</td>
+<td>rad/s²</td>
+</tr>
+<tr>
+<td>$\tau$</td>
+<td>施加在关节上的净驱动力矩</td>
+<td>N·m</td>
+</tr>
+</tbody>
+</table>
+<p>如果施加恒定正力矩，角加速度为正，速度会不断增加。<strong>所以只给一个恒定力矩，不能自动保证关节在目标处停住。</strong></p>
+<h2 id="section-3">3. P 控制：根据位置误差施加力矩</h2>
+<p>最自然的控制律是：</p>
+<p>$$
+\tau=K_pe=K_p(q_d-q)
+$$</p>
+<p>$K_p$ 是比例增益。对这个直接用力矩驱动的关节，单位可理解为 N·m/rad。误差大，纠正力矩大；误差趋近 0，纠正力矩减小。</p>
+<p>但请注意：<strong>当 $q=q_d$ 时，P 控制输出为 0，关节可能依然运动。</strong> 在无摩擦的理想模型里，纯 P 控制相当于为关节增加一个“虚拟弹簧”，它会围绕目标位置持续振荡。</p>
+<p>将 P 控制代入动力学：</p>
+<p>$$
+J\ddot q=K_p(q_d-q)
+$$</p>
+<p>固定目标角度时，令 $e=q_d-q$，得到：</p>
+<p>$$
+J\ddot e+K_pe=0
+$$</p>
+<p>这是一种没有阻尼项的振动方程。</p>
+<h2 id="section-4">4. PD 控制：再用速度反馈让它停下</h2>
+<p>针对<strong>目标角度固定</strong>的定位任务，加入速度反馈：</p>
+<p>$$
+\boxed{\tau=K_p(q_d-q)-K_d\dot q}
+$$</p>
+<ul>
+<li><strong>P 项</strong> $K_p(q_d-q)$：位置偏差越大，朝目标修正的力矩越大，类似“弹簧”。</li>
+<li><strong>D 项</strong> $-K_d\dot q$：沿运动速度反方向施加力矩，类似“阻尼器”，抑制冲过目标位置的趋势。</li>
+</ul>
+<p>此处 $K_d$ 对应力矩/角速度，单位可理解为 N·m·s/rad。</p>
+<p>考虑 $q_d=90°$，此时恰好 $q=90°$，但 $\dot q&gt;0$：</p>
+<ul>
+<li>P 项为 0；</li>
+<li>D 项 $-K_d\dot q&lt;0$；</li>
+<li>输出负力矩，使关节减速。</li>
+</ul>
+<p>这说明<strong>“位置误差为零”与“系统已经稳定”是两个不同概念</strong>。</p>
+<blockquote>
+<p>注意：如果目标 $q_d(t)$ 是变化的轨迹，另一种常见写法是 $\tau=K_pe+K_d\dot e$，即使用速度误差。它与本课的 $-K_d\dot q$ 在目标恒定时一致；目标变化时则不完全相同。后续讲轨迹跟踪会区分。</p>
+</blockquote>
+<h2 id="section-5">到达目标位置时，关节为什么还需要刹车？</h2>
+<p>先不跑整段仿真，只看“此刻”控制器输出。目标与实际位置相同，但关节还在向正方向转：</p>
+<p>$$
+q_d=q=1\ \mathrm{rad},\quad \dot q=0.5\ \mathrm{rad/s},\quad
+J=1\ \mathrm{kg\,m^2},\quad K_p=16,\quad K_d=8.
+$$</p>
+<p>比例项只看位置误差，因此此刻为零。速度反馈还会工作：</p>
+<p>$$
+\begin{aligned}
+e&amp;=q_d-q=0,\\
+\tau_P&amp;=K_pe=0,\\
+\tau_D&amp;=-K_d\dot q=-4\ \mathrm{N\,m},\\
+\ddot q&amp;=\tau/J=-4\ \mathrm{rad/s^2}.
+\end{aligned}
+$$</p>
+<p>负角加速度表示此刻正在减小正向角速度，而不是“速度立刻变为零”。若只看这 0.01 s 的局部变化，速度约从 0.5 降到 0.46 rad/s；控制器随后还会根据新状态重新计算。这个局部近似不能当成整段恒定减速过程。</p>
+<p>图中比较相同模型在纯 P 与 PD 下对 1 rad 目标的响应。P 有位置恢复作用，却没有耗散振动能量；D 增加制动，才能在理想模型中逐步停住。</p>
+<p><img alt="本课数值例子的定量对照图" src="../courses/01-反馈控制/media/worked-example-dark.svg"/></p>
+<p><strong>读图与操作</strong>：先把 Kd 调到 0，再调到 8；看是否越过目标、振荡是否衰减。不要只比较第一次到达目标的时刻。</p>
+<p><strong>使用条件</strong>：目标恒定、力矩直接驱动、忽略摩擦与饱和；角度以 rad 参与计算。</p>
+<h3 id="section-6">先预测，再展开核对</h3>
+<p>若此刻速度为 −0.5 rad/s，D 项该向哪个方向施加力矩？</p>
+<details><summary>查看思路与答案</summary>
+<p>D 项变为 +4 N·m，抵抗负向运动。它的符号始终与测量速度相反。</p>
+</details>
+<h2 id="section-7">5. 互动演示：观察 P 与 PD</h2>
+<p>调整下方 $K_d$，观察在同样的 $J$ 和 $K_p$ 下是否振荡、是否越过目标。为了突出规律，演示继续使用理想二阶模型，起点 0°、目标 90°。</p>
+<div class="demo" data-demo="response" data-j="1" data-kd="8" data-kp="16"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>
+<p>建议依次比较：<strong>$K_d=0$、$1$、$4$、$8$、$12$</strong>。这个图用于直观观察；为什么不同增益会表现不同，第 2 课推导。</p>
+<h2 id="section-8">6. MATLAB：自己实现两种控制器</h2>
+<p>下面用 <code>ode45</code> 数值求解运动微分方程，不依赖控制系统工具箱：</p>
+<div class="code-panel"><div class="code-label">MATLAB</div><pre class="code-highlight"><code><span class="nb">clc</span><span class="p">;</span><span class="w"> </span><span class="nb">clear</span><span class="p">;</span><span class="w"> </span><span class="n">close</span><span class="w"> </span><span class="s">all</span><span class="p">;</span>
+<span class="n">J</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="n">Kp</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">16</span><span class="p">;</span>
+<span class="n">q_ref</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">;</span><span class="w">           </span><span class="c">% 目标角度：90°</span>
+<span class="n">x0</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="mi">0</span><span class="p">];</span><span class="w">            </span><span class="c">% 状态：[角度; 角速度]</span>
+<span class="n">tspan</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="mf">0.01</span><span class="p">:</span><span class="mi">5</span><span class="p">;</span>
+
+<span class="nb">figure</span><span class="p">;</span><span class="w"> </span><span class="n">hold</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="k">for</span><span class="w"> </span><span class="n">Kd</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">]</span>
+<span class="w">    </span><span class="n">f</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">@(</span><span class="n">t</span><span class="p">,</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">[</span><span class="n">x</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+<span class="w">                </span><span class="p">(</span><span class="n">Kp</span><span class="o">*</span><span class="p">(</span><span class="n">q_ref</span><span class="o">-</span><span class="n">x</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">-</span><span class="n">Kd</span><span class="o">*</span><span class="n">x</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span><span class="o">/</span><span class="n">J</span><span class="p">];</span>
+<span class="w">    </span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">x</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">ode45</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">tspan</span><span class="p">,</span><span class="w"> </span><span class="n">x0</span><span class="p">);</span>
+<span class="w">    </span><span class="nb">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="nb">rad2deg</span><span class="p">(</span><span class="n">x</span><span class="p">(:,</span><span class="mi">1</span><span class="p">)),</span><span class="w"> </span><span class="s">'LineWidth'</span><span class="p">,</span><span class="w"> </span><span class="mf">1.5</span><span class="p">,</span><span class="w"> </span><span class="k">...</span>
+<span class="w">         </span><span class="s">'DisplayName'</span><span class="p">,</span><span class="w"> </span><span class="nb">sprintf</span><span class="p">(</span><span class="s">'Kd = %g'</span><span class="p">,</span><span class="w"> </span><span class="n">Kd</span><span class="p">));</span>
+<span class="k">end</span>
+<span class="nb">yline</span><span class="p">(</span><span class="mi">90</span><span class="p">,</span><span class="s">'k--'</span><span class="p">,</span><span class="s">'目标角度'</span><span class="p">);</span>
+<span class="nb">xlabel</span><span class="p">(</span><span class="s">'时间 (s)'</span><span class="p">);</span><span class="w"> </span><span class="nb">ylabel</span><span class="p">(</span><span class="s">'角度 (deg)'</span><span class="p">);</span>
+<span class="nb">legend</span><span class="p">;</span><span class="w"> </span><span class="n">grid</span><span class="w"> </span><span class="s">on</span><span class="p">;</span></code></pre></div>
+<p><code>x(1)</code> 是角度，<code>x(2)</code> 是角速度；右侧的两行分别表示 $\dot x_1=x_2$ 与 $\dot x_2=\tau/J$。后面的状态空间方法就建立在这种描述之上。</p>
+<h2 id="section-9">7. 本课检查</h2>
+<ol>
+<li>目标是 90°，实际也是 90°，但关节仍沿正方向转动：纯 P 控制和 PD 控制分别输出怎样的力矩？</li>
+<li>为什么没有测量实际角度的开环控制，很难在负载变化时精确停在目标位置？</li>
+<li>说说 $K_p$、$K_d$ 各自主要影响什么。暂时不用定量回答。</li>
+</ol>
+<p><strong>课程小结：</strong> 控制器不是简单地“让电机转”，而是在动力学模型上利用反馈持续调节输入。P 看位置，D 看速度；后面我们用二阶系统理论定量分析稳定性与响应速度。</p>
+<h2 id="section-10">课程衔接与条件检查</h2>
+<h3 id="section-11">反馈信号、扰动与传感器不是一条通道</h3>
+<p>设控制器 C、对象 G、传感器 H，比较器误差为 $e_c=r-Hy$。若扰动 d 加在对象输入端，有 $y=G(Ce_c+d)$，所以 $y=[GC/(1+GCH)]r+[G/(1+GCH)]d$。只有 H=1 时，比较器误差才等于实际跟踪误差 r−y。传感器偏差会使控制器在错误测量上达到平衡，反馈不能自动纠正传感器自身的系统性偏差。</p>
+<p>例：目标 1 rad，传感器始终多报 0.1 rad，即使比较器误差为零，真实位置也可能只有 0.9 rad。请在图上分别标记参考、输出、测量和扰动，之后再使用简化的单位反馈公式。</p>
+<p><strong>自查</strong>：若此刻速度为 −0.5 rad/s，D 项该向哪个方向施加力矩？</p>
+</article><div class="page-footer"><a href="02-二阶系统.html">下一课 →</a></div></main>
+<nav class="sidebar" aria-label="课程总目录"><div class="sidebar-title">课程总目录</div><a class="nav-home" href="../index.html">首页 · 课程目录</a><div class="group-label">按学习阶段浏览</div><details class="nav-phase" open><summary><span class="phase-title">阶段 0｜经典控制基础与补桥</span><small>第 1–16 课：反馈、PID、稳定性与频域设计</small></summary><details class="nav-course" open><summary><span class="course-number">第 1 课</span><span class="course-title">反馈控制与第一个 PD 控制器</span></summary><div class="nav-course-links"><a class="active" href="01-反馈控制.html">讲解</a><a class="" href="../reviews/01-反馈控制.html">复习</a><a class="" href="../formulas/01-反馈控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 2 课</span><span class="course-title">二阶系统、阻尼比与超调量</span></summary><div class="nav-course-links"><a class="" href="02-二阶系统.html">讲解</a><a class="" href="../reviews/02-二阶系统.html">复习</a><a class="" href="../formulas/02-二阶系统.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 3 课</span><span class="course-title">拉普拉斯变换与传递函数</span></summary><div class="nav-course-links"><a class="" href="03-传递函数.html">讲解</a><a class="" href="../reviews/03-传递函数.html">复习</a><a class="" href="../formulas/03-传递函数.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 4 课</span><span class="course-title">极点、零点与系统稳定性</span></summary><div class="nav-course-links"><a class="" href="04-极点与零点.html">讲解</a><a class="" href="../reviews/04-极点与零点.html">复习</a><a class="" href="../formulas/04-极点与零点.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 5 课</span><span class="course-title">时间响应指标与 PD 控制器参数设计</span></summary><div class="nav-course-links"><a class="" href="05-PD参数设计.html">讲解</a><a class="" href="../reviews/05-PD参数设计.html">复习</a><a class="" href="../formulas/05-PD参数设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 6 课</span><span class="course-title">积分控制、稳态误差与积分饱和</span></summary><div class="nav-course-links"><a class="" href="06-积分控制.html">讲解</a><a class="" href="../reviews/06-积分控制.html">复习</a><a class="" href="../formulas/06-积分控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 7 课</span><span class="course-title">稳态误差与终值定理</span></summary><div class="nav-course-links"><a class="" href="07-稳态误差与终值定理.html">讲解</a><a class="" href="../reviews/07-稳态误差与终值定理.html">复习</a><a class="" href="../formulas/07-稳态误差与终值定理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 8 课</span><span class="course-title">PID 参数整定与积分抗饱和</span></summary><div class="nav-course-links"><a class="" href="08-PID整定与抗饱和.html">讲解</a><a class="" href="../reviews/08-PID整定与抗饱和.html">复习</a><a class="" href="../formulas/08-PID整定与抗饱和.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 9 课</span><span class="course-title">数字 PID 实现</span></summary><div class="nav-course-links"><a class="" href="09-数字PID实现.html">讲解</a><a class="" href="../reviews/09-数字PID实现.html">复习</a><a class="" href="../formulas/09-数字PID实现.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 10 课</span><span class="course-title">Routh稳定判据</span></summary><div class="nav-course-links"><a class="" href="10-Routh稳定判据.html">讲解</a><a class="" href="../reviews/10-Routh稳定判据.html">复习</a><a class="" href="../formulas/10-Routh稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 11 课</span><span class="course-title">根轨迹与增益设计</span></summary><div class="nav-course-links"><a class="" href="11-根轨迹与增益设计.html">讲解</a><a class="" href="../reviews/11-根轨迹与增益设计.html">复习</a><a class="" href="../formulas/11-根轨迹与增益设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 12 课</span><span class="course-title">频率响应与 Bode 图</span></summary><div class="nav-course-links"><a class="" href="12-频率响应与Bode图.html">讲解</a><a class="" href="../reviews/12-频率响应与Bode图.html">复习</a><a class="" href="../formulas/12-频率响应与Bode图.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 13 课</span><span class="course-title">Nyquist 稳定判据——沿着曲线判断闭环稳定性</span></summary><div class="nav-course-links"><a class="" href="13-Nyquist稳定判据.html">讲解</a><a class="" href="../reviews/13-Nyquist稳定判据.html">复习</a><a class="" href="../formulas/13-Nyquist稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 14 课</span><span class="course-title">增益裕度与相位裕度</span></summary><div class="nav-course-links"><a class="" href="14-增益裕度与相位裕度.html">讲解</a><a class="" href="../reviews/14-增益裕度与相位裕度.html">复习</a><a class="" href="../formulas/14-增益裕度与相位裕度.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 15 课</span><span class="course-title">超前与滞后校正</span></summary><div class="nav-course-links"><a class="" href="15-超前与滞后校正.html">讲解</a><a class="" href="../reviews/15-超前与滞后校正.html">复习</a><a class="" href="../formulas/15-超前与滞后校正.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 16 课</span><span class="course-title">闭环带宽、延迟与鲁棒性</span></summary><div class="nav-course-links"><a class="" href="16-闭环带宽与延迟鲁棒性.html">讲解</a><a class="" href="../reviews/16-闭环带宽与延迟鲁棒性.html">复习</a><a class="" href="../formulas/16-闭环带宽与延迟鲁棒性.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 1｜数学与模型衔接</span><small>第 17–19 课：矩阵、特征值、传递函数与状态空间</small></summary><details class="nav-course"><summary><span class="course-number">第 17 课</span><span class="course-title">矩阵与状态向量——现代控制的数学语言</span></summary><div class="nav-course-links"><a class="" href="17-矩阵与状态向量.html">讲解</a><a class="" href="../reviews/17-矩阵与状态向量.html">复习</a><a class="" href="../formulas/17-矩阵与状态向量.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 18 课</span><span class="course-title">特征值与系统动态</span></summary><div class="nav-course-links"><a class="" href="18-特征值与系统动态.html">讲解</a><a class="" href="../reviews/18-特征值与系统动态.html">复习</a><a class="" href="../formulas/18-特征值与系统动态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 19 课</span><span class="course-title">传递函数到状态空间</span></summary><div class="nav-course-links"><a class="" href="19-传递函数到状态空间.html">讲解</a><a class="" href="../reviews/19-传递函数到状态空间.html">复习</a><a class="" href="../formulas/19-传递函数到状态空间.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 2｜现代线性控制核心</span><small>第 20–31 课：状态响应、反馈、LQR、估计与离散综合</small></summary><details class="nav-course"><summary><span class="course-number">第 20 课</span><span class="course-title">状态空间基础</span></summary><div class="nav-course-links"><a class="" href="20-状态空间基础.html">讲解</a><a class="" href="../reviews/20-状态空间基础.html">复习</a><a class="" href="../formulas/20-状态空间基础.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 21 课</span><span class="course-title">相平面与状态轨迹</span></summary><div class="nav-course-links"><a class="" href="21-相平面与状态轨迹.html">讲解</a><a class="" href="../reviews/21-相平面与状态轨迹.html">复习</a><a class="" href="../formulas/21-相平面与状态轨迹.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 22 课</span><span class="course-title">连续系统离散化</span></summary><div class="nav-course-links"><a class="" href="22-连续系统离散化.html">讲解</a><a class="" href="../reviews/22-连续系统离散化.html">复习</a><a class="" href="../formulas/22-连续系统离散化.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 23 课</span><span class="course-title">可控性与可达状态</span></summary><div class="nav-course-links"><a class="" href="23-可控性与可达状态.html">讲解</a><a class="" href="../reviews/23-可控性与可达状态.html">复习</a><a class="" href="../formulas/23-可控性与可达状态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 24 课</span><span class="course-title">线性系统的Lyapunov稳定性</span></summary><div class="nav-course-links"><a class="" href="24-线性系统的Lyapunov稳定性.html">讲解</a><a class="" href="../reviews/24-线性系统的Lyapunov稳定性.html">复习</a><a class="" href="../formulas/24-线性系统的Lyapunov稳定性.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 25 课</span><span class="course-title">状态反馈与极点配置</span></summary><div class="nav-course-links"><a class="" href="25-状态反馈与极点配置.html">讲解</a><a class="" href="../reviews/25-状态反馈与极点配置.html">复习</a><a class="" href="../formulas/25-状态反馈与极点配置.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 26 课</span><span class="course-title">LQR最优状态反馈</span></summary><div class="nav-course-links"><a class="" href="26-LQR最优状态反馈.html">讲解</a><a class="" href="../reviews/26-LQR最优状态反馈.html">复习</a><a class="" href="../formulas/26-LQR最优状态反馈.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 27 课</span><span class="course-title">状态反馈的参考跟踪</span></summary><div class="nav-course-links"><a class="" href="27-状态反馈的参考跟踪.html">讲解</a><a class="" href="../reviews/27-状态反馈的参考跟踪.html">复习</a><a class="" href="../formulas/27-状态反馈的参考跟踪.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 28 课</span><span class="course-title">可观测性与输出信息</span></summary><div class="nav-course-links"><a class="" href="28-可观测性与输出信息.html">讲解</a><a class="" href="../reviews/28-可观测性与输出信息.html">复习</a><a class="" href="../formulas/28-可观测性与输出信息.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 29 课</span><span class="course-title">Luenberger状态观测器</span></summary><div class="nav-course-links"><a class="" href="29-Luenberger状态观测器.html">讲解</a><a class="" href="../reviews/29-Luenberger状态观测器.html">复习</a><a class="" href="../formulas/29-Luenberger状态观测器.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 30 课</span><span class="course-title">观测器反馈与分离原理</span></summary><div class="nav-course-links"><a class="" href="30-观测器反馈与分离原理.html">讲解</a><a class="" href="../reviews/30-观测器反馈与分离原理.html">复习</a><a class="" href="../formulas/30-观测器反馈与分离原理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 31 课</span><span class="course-title">离散状态反馈与综合设计</span></summary><div class="nav-course-links"><a class="" href="31-离散状态反馈与综合设计.html">讲解</a><a class="" href="../reviews/31-离散状态反馈与综合设计.html">复习</a><a class="" href="../formulas/31-离散状态反馈与综合设计.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 3｜非线性控制进阶</span><small>后续计划：Lyapunov、LaSalle 与非线性控制</small></summary><div class="phase-coming">该阶段课程将在学习进度推进后加入。</div></details><details class="nav-phase"><summary><span class="phase-title">阶段 4｜机器人与车辆实践</span><small>控制器综合设计、MATLAB 与 C++ 实现</small></summary><details class="nav-course"><summary><span class="course-number">第 32 课</span><span class="course-title">机器人控制器综合设计</span></summary><div class="nav-course-links"><a class="" href="32-机器人控制器综合设计.html">讲解</a><a class="" href="../reviews/32-机器人控制器综合设计.html">复习</a><a class="" href="../formulas/32-机器人控制器综合设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 33 课</span><span class="course-title">MATLAB 仿真与 C++ 控制循环</span></summary><div class="nav-course-links"><a class="" href="33-MATLAB仿真与C++控制循环.html">讲解</a><a class="" href="../reviews/33-MATLAB仿真与C++控制循环.html">复习</a><a class="" href="../formulas/33-MATLAB仿真与C++控制循环.html">公式</a></div></details></details></nav>
+</div><script data-demo-module="demo-core">
+/* 共享交互基础设施：课程页面按需加载各 demo 的普通脚本，兼容 file:// 离线打开。 */
+(function(){
+  'use strict';
+  const registry = new Map();
+  const DEG = 180/Math.PI;
+  function color(light,dark){return document.documentElement.dataset.theme==='dark'?dark:light;}
+  function poleRoots(J,Kp,Kd){
+    const d=Kd*Kd-4*J*Kp;
+    return d>=0 ? [{re:(-Kd+Math.sqrt(d))/(2*J),im:0},{re:(-Kd-Math.sqrt(d))/(2*J),im:0}]
+      : [{re:-Kd/(2*J),im:Math.sqrt(-d)/(2*J)},{re:-Kd/(2*J),im:-Math.sqrt(-d)/(2*J)}];
+  }
+  function solve(J,Kp,Kd){
+    let q=0,v=0,t=0;const dt=.008,out=[],qr=Math.PI/2;
+    const rhs=(a,b)=>[b,(Kp*(qr-a)-Kd*b)/J];
+    for(let i=0;i<=750;i++){
+      out.push([t,q*DEG]);
+      const a=rhs(q,v),b=rhs(q+dt*a[0]/2,v+dt*a[1]/2),c=rhs(q+dt*b[0]/2,v+dt*b[1]/2),d=rhs(q+dt*c[0],v+dt*c[1]);
+      q+=dt*(a[0]+2*b[0]+2*c[0]+d[0])/6;
+      v+=dt*(a[1]+2*b[1]+2*c[1]+d[1])/6;t+=dt;
+    }
+    return out;
+  }
+  function canvasReady(canvas){
+    const w=Math.max(canvas.clientWidth,260),h=canvas.clientHeight||245,dpr=window.devicePixelRatio||1;
+    canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+    const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return {ctx,w,h};
+  }
+  function mountPD(node, options){
+    const J0=Number(node.dataset.j||1),Kp0=Number(node.dataset.kp||16),Kd0=Number(node.dataset.kd??8);
+    node.innerHTML=`<p class="demo-title">${options.title}</p><p class="demo-note">理想单关节模型，目标 90°、初始角度及速度为零；本地浏览器计算。</p>
+      <div class="demo-controls">
+      <div class="control"><label>J（kg·m²）<output data-out="j"></output></label><input data-param="j" type="range" min="0.5" max="5" step="0.5"></div>
+      <div class="control"><label>Kp（N·m/rad）<output data-out="kp"></output></label><input data-param="kp" type="range" min="2" max="36" step="2"></div>
+      <div class="control"><label>Kd（N·m·s/rad）<output data-out="kd"></output></label><input data-param="kd" type="range" min="0" max="24" step="1"></div>
+      </div><canvas class="demo-canvas" role="img" aria-label="互动数学模型的曲线"></canvas>
+      <div class="demo-meta" aria-live="polite"></div><div class="demo-caption">${options.caption}</div>`;
+    const inputs={};node.querySelectorAll('input').forEach(el=>inputs[el.dataset.param]=el);
+    inputs.j.value=String(J0);inputs.kp.value=String(Kp0);inputs.kd.value=String(Kd0);
+    const canvas=node.querySelector('canvas'),meta=node.querySelector('.demo-meta');
+    function draw(){
+      const J=+inputs.j.value,Kp=+inputs.kp.value,Kd=+inputs.kd.value;
+      for(const name of ['j','kp','kd'])node.querySelector('[data-out="'+name+'"]').textContent=inputs[name].value;
+      const z=Kd/(2*Math.sqrt(J*Kp)),wn=Math.sqrt(Kp/J);
+      const details=options.render(canvas,J,Kp,Kd);
+      meta.replaceChildren();
+      for(const str of [`阻尼比 ζ = ${z.toFixed(3)}`,`ωn = ${wn.toFixed(3)} rad/s`,...details]){
+        const s=document.createElement('span');s.textContent=str;meta.appendChild(s);
+      }
+    }
+    Object.values(inputs).forEach(el=>el.addEventListener('input',draw));
+    window.addEventListener('robot-theme-changed',draw);
+    if(typeof ResizeObserver!=='undefined')new ResizeObserver(draw).observe(canvas);
+    else window.addEventListener('resize',draw);
+    draw();
+  }
+  window.NoteDemos={register(name,mount){
+    if(registry.has(name))throw new Error('重复的演示名称：'+name);
+    registry.set(name,mount);
+  }, utils:{color,poleRoots,solve,canvasReady,mountPD}};
+  function boot(){
+    document.querySelectorAll('.demo[data-demo]').forEach(node=>{
+      const name=node.dataset.demo;
+      try{
+        if(!registry.has(name))throw new Error(`模块「${name}」没有注册`);
+        registry.get(name)(node,window.NoteDemos.utils);
+      }catch(err){
+        node.textContent=`演示加载失败（${name}）：${err.message}。正文和公式仍可阅读。`;
+        node.classList.add('demo-error');console.error(err);
+      }
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+
+</script>
+<script data-demo-module="response">
+/* 可复用演示：任何课程只需 :::demo response j=1 kp=16 kd=8 即可引用。 */
+(function(){
+  'use strict';
+  window.NoteDemos.register('response',function(node,u){
+    u.mountPD(node,{
+      title:'交互演示｜单关节角度阶跃响应',
+      caption:'蓝线表示关节角度，灰色虚线是 90° 目标。调节时间在 6 秒观察窗口内估计。',
+      render(canvas,J,Kp,Kd){
+        const {ctx,w,h}=u.canvasReady(canvas),pts=u.solve(J,Kp,Kd);
+        const pad={l:43,r:13,t:18,b:31},pw=w-pad.l-pad.r,ph=h-pad.t-pad.b;
+        const ymax=Math.max(110,Math.ceil((Math.max(...pts.map(p=>p[1]))+8)/20)*20);
+        const X=x=>pad.l+x/6*pw,Y=y=>pad.t+(ymax-y)/ymax*ph;
+        ctx.font='11px system-ui';ctx.lineWidth=1;ctx.textAlign='right';
+        for(let y=0;y<=ymax;y+=ymax/4){
+          ctx.strokeStyle=u.color('#e9ecee','#3c4855');ctx.beginPath();ctx.moveTo(pad.l,Y(y));ctx.lineTo(w-pad.r,Y(y));ctx.stroke();
+          ctx.fillStyle=u.color('#66717e','#a2b0bf');ctx.fillText(y.toFixed(0)+'°',pad.l-8,Y(y)+4);
+        }
+        ctx.textAlign='center';for(let t=0;t<=6;t++){ctx.fillStyle=u.color('#66717e','#a2b0bf');ctx.fillText(t+'s',X(t),h-10);}
+        ctx.setLineDash([5,4]);ctx.strokeStyle=u.color('#9aadb9','#8295a8');ctx.beginPath();ctx.moveTo(X(0),Y(90));ctx.lineTo(X(6),Y(90));ctx.stroke();ctx.setLineDash([]);
+        ctx.lineWidth=2.2;ctx.strokeStyle=u.color('#285f9a','#85bafb');ctx.beginPath();
+        pts.forEach(([t,y],i)=>i?ctx.lineTo(X(t),Y(y)):ctx.moveTo(X(t),Y(y)));ctx.stroke();
+        const mp=Math.max(0,Math.max(...pts.map(p=>p[1]))-90)/90*100;
+        let last=-1;for(let i=0;i<pts.length;i++)if(Math.abs(pts[i][1]-90)>1.8)last=i;
+        const ts=last===pts.length-1?'超过 6 s':pts[Math.max(0,last+1)][0].toFixed(2)+' s';
+        return [`超调 ≈ ${mp.toFixed(1)}%`,`2% 调节时间：${ts}`];
+      }
+    });
+  });
+})();
+
+</script></body></html>

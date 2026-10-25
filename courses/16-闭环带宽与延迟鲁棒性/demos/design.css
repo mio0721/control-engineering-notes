@@ -1,0 +1,5 @@
+.bandwidth-lab .demo-controls{grid-template-columns:repeat(3,minmax(0,1fr))}
+.bandwidth-lab canvas{margin:12px 0;height:245px;background:var(--paper)}
+.bandwidth-lab .demo-meta{font-variant-numeric:tabular-nums}
+.prose img[src$="closed-loop-bandwidth.svg"],.prose img[src$="delay-phase-dark.svg"]{display:block;width:100%;height:auto;margin:18px auto;border-radius:5px}
+@media(max-width:620px){.bandwidth-lab .demo-controls{grid-template-columns:1fr}.bandwidth-lab canvas{height:220px}}

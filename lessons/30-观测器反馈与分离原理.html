@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
+<title>第 30 课 · 观测器反馈与分离原理 · 课程讲解｜机器人控制理论笔记</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('robot-note-theme')||'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
+<link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../assets/demos/modern-lab.css">
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true,packages:{'[+]':['base','ams']}},svg:{fontCache:'local'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
+<script defer src="../assets/mathjax-tex-svg.js"></script><script defer src="../assets/theme.js"></script>
+</head><body>
+<header class="mast"><div class="mast-inner"><a class="brand" href="../index.html">机器人控制理论笔记 <small>持续更新 · 离线 HTML</small></a><div class="top-actions"><span class="top-indicator">已整理 33 课</span><button id="themeToggle" type="button" class="theme-toggle" aria-label="切换日间与夜间模式" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">夜间模式</span></button></div></div></header>
+<div class="layout">
+<aside class="toc" aria-label="本章目录"><div class="toc-label">本章目录</div><a class="h2" href="#section-1">1. 测不到全部状态，反馈怎样实现？</a><a class="h2" href="#section-2">2. 用误差坐标把连接关系写出来</a><a class="h2" href="#section-3">3. 一套可手算的配置</a><a class="h2" href="#section-4">4. 稳定性结论与工程鲁棒性分开看</a><a class="h2" href="#section-5">5. 参考跟踪怎样加入？</a><a class="h3" href="#section-6">把联合矩阵展开，直接看耦合项</a><a class="h2" href="#section-7">动手实验：先预测，再改变参数</a><a class="h2" href="#section-8">MATLAB：独立核对</a><a class="h2" href="#section-9">本课练习</a></aside>
+<main class="main" id="content"><div class="eyebrow">第 30 课 / 课程讲解</div><div class="chapter-tabs"><a class="active" href="30-观测器反馈与分离原理.html">课程讲解</a><a class="" href="../reviews/30-观测器反馈与分离原理.html">复习笔记</a><a class="" href="../formulas/30-观测器反馈与分离原理.html">公式手册</a></div><article class="prose"><h1>第 30 课：观测器反馈与分离原理</h1>
+<blockquote>
+<p>阶段 2 · 将估计状态接入控制器，理解两组极点怎样共同决定闭环。</p>
+</blockquote>
+<h2 id="section-1">1. 测不到全部状态，反馈怎样实现？</h2>
+<p>使用估计状态而非真实状态：</p>
+<p>$$
+u=-K\hat x,\qquad\dot{\hat x}=A\hat x+Bu+L(y-C\hat x).
+$$</p>
+<p>控制器K先依据可控性设计，观测器L依据可观测性设计。它们连接后仍要检查完整闭环，不能只看两张独立响应图。</p>
+<h2 id="section-2">2. 用误差坐标把连接关系写出来</h2>
+<p>令e=x−x̂，则x̂=x−e，代入真实方程：</p>
+<p>$$
+\begin{bmatrix}\dot x\\\dot e\end{bmatrix}
+=\begin{bmatrix}A-BK&amp;BK\\0&amp;A-LC\end{bmatrix}
+\begin{bmatrix}x\\e\end{bmatrix}.
+$$</p>
+<p>这是块上三角矩阵，特征多项式等于两个对角块特征多项式之积，因此闭环极点是两组极点的并集。估计误差通过BK影响真实系统，但不改变这组联合极点的代数结论。</p>
+<h2 id="section-3">3. 一套可手算的配置</h2>
+<p>双积分器取K=[6,5]，控制根−2、−3；L=[9,20]ᵀ，估计误差根−4、−5。连接后的四个极点就是−2、−3、−4、−5。</p>
+<p>若真实初态[1,0]ᵀ而估计初态为零，控制器一开始认为没有偏差，所以初始输入为零；测量残差随后修正估计，控制才逐渐响应。这与使用真实状态时一开始输出−6不同。看两条位置曲线不同，并不与“极点并集”矛盾。</p>
+<h2 id="section-4">4. 稳定性结论与工程鲁棒性分开看</h2>
+<p>分离原理适用于精确线性模型及相应结构条件：控制闭环和估计误差闭环都Hurwitz，则连接系统也Hurwitz。它没有保证任意噪声、输入限幅、计算延迟和模型失配下仍有相同性能。</p>
+<p>观测器极点放得非常快可能带来峰化和噪声放大；即使四个理想极点都在左半平面，也要检查控制输入是否可实现。</p>
+<h2 id="section-5">5. 参考跟踪怎样加入？</h2>
+<p>可在u=−Kx̂上加平衡前馈或参考轨迹项。先把参考与误差状态定义清楚，再构造估计器。不要同时更换坐标、误差符号与输入定义，否则容易把BK项的符号写反。</p>
+<h3 id="section-6">把联合矩阵展开，直接看耦合项</h3>
+<p>按坐标[q,v,e_q,e_v]排列，本课配置的联合矩阵是：</p>
+<p>$$
+M=\begin{bmatrix}0&amp;1&amp;0&amp;0\\-6&amp;-5&amp;6&amp;5\\0&amp;0&amp;-9&amp;1\\0&amp;0&amp;-20&amp;0\end{bmatrix}.
+$$</p>
+<p>初态[1,0,1,0]ᵀ时，真实加速度为−6+6=0，而估计误差导数为[−9,−20]ᵀ。随后误差不再维持原值，估计反馈开始驱动真实系统。不能因为第一瞬间u=0，就误以为控制器之后也不会动作。</p>
+<p><img alt="本课数值例子的深色对照图" src="../courses/30-观测器反馈与分离原理/media/modern-example-dark.svg"/></p>
+<h2 id="section-7">动手实验：先预测，再改变参数</h2>
+<p>分别调控制器与观测器的目标速率；看真实位置、估计位置和控制输入。检查初始估计不准时输入与理想全状态反馈的区别。</p>
+<div class="demo" data-demo="modern-lab" data-mode="separation"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>
+<h2 id="section-8">MATLAB：独立核对</h2>
+<div class="code-panel"><div class="code-label">MATLAB</div><pre class="code-highlight"><code><span class="n">A</span><span class="p">=[</span><span class="mi">0</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="n">0</span><span class="w"> </span><span class="s">0]</span><span class="p">;</span><span class="n">B</span><span class="p">=[</span><span class="mi">0</span><span class="p">;</span><span class="mi">1</span><span class="p">];</span><span class="n">C</span><span class="p">=[</span><span class="mi">1</span><span class="w"> </span><span class="mi">0</span><span class="p">];</span><span class="n">K</span><span class="p">=[</span><span class="mi">6</span><span class="w"> </span><span class="mi">5</span><span class="p">];</span><span class="n">L</span><span class="p">=[</span><span class="mi">9</span><span class="p">;</span><span class="mi">20</span><span class="p">];</span>
+<span class="n">M</span><span class="p">=[</span><span class="n">A</span><span class="o">-</span><span class="n">B</span><span class="o">*</span><span class="n">K</span><span class="w"> </span><span class="n">B</span><span class="o">*</span><span class="n">K</span><span class="p">;</span><span class="nb">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="n">A</span><span class="o">-</span><span class="n">L</span><span class="o">*</span><span class="n">C</span><span class="p">];</span><span class="nb">disp</span><span class="p">(</span><span class="nb">eig</span><span class="p">(</span><span class="n">M</span><span class="p">));</span>
+<span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">Z</span><span class="p">]=</span><span class="nb">ode45</span><span class="p">(@(</span><span class="n">t</span><span class="p">,</span><span class="n">z</span><span class="p">)</span><span class="n">M</span><span class="o">*</span><span class="n">z</span><span class="p">,[</span><span class="mi">0</span><span class="w"> </span><span class="mi">6</span><span class="p">],[</span><span class="mi">1</span><span class="p">;</span><span class="mi">0</span><span class="p">;</span><span class="mi">1</span><span class="p">;</span><span class="mi">0</span><span class="p">]);</span>
+<span class="n">X</span><span class="p">=</span><span class="n">Z</span><span class="p">(:,</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">);</span><span class="n">E</span><span class="p">=</span><span class="n">Z</span><span class="p">(:,</span><span class="mi">3</span><span class="p">:</span><span class="mi">4</span><span class="p">);</span><span class="n">Xhat</span><span class="p">=</span><span class="n">X</span><span class="o">-</span><span class="n">E</span><span class="p">;</span><span class="n">U</span><span class="p">=</span><span class="o">-</span><span class="n">Xhat</span><span class="o">*</span><span class="n">K</span><span class="o">'</span><span class="p">;</span>
+<span class="nb">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">X</span><span class="p">(:,</span><span class="mi">1</span><span class="p">),</span><span class="n">t</span><span class="p">,</span><span class="n">Xhat</span><span class="p">(:,</span><span class="mi">1</span><span class="p">),</span><span class="n">t</span><span class="p">,</span><span class="n">U</span><span class="p">);</span><span class="nb">grid</span><span class="w"> </span><span class="n">on</span><span class="p">;</span>
+<span class="nb">legend</span><span class="p">(</span><span class="s">'真实位置'</span><span class="p">,</span><span class="s">'估计位置'</span><span class="p">,</span><span class="s">'输入'</span><span class="p">);</span></code></pre></div>
+<p>示例使用基础MATLAB，涉及工具箱的替代函数已注明；本轮未实际运行MATLAB。请对照手算值与单位，不只看图形外观。</p>
+<h2 id="section-9">本课练习</h2>
+<ol>
+<li>写出双积分器K=[6,5]、L=[9,20]时的两个对角块。</li>
+<li>为什么联合矩阵右上块是+BK？</li>
+<li>真实初态非零而估计初态为零时，初始输入是多少？</li>
+<li>极点都稳定是否保证饱和后的真实响应仍满足原分析？</li>
+</ol>
+<details><summary>展开自查要点（先写出过程）</summary>
+<ol>
+<li>A−BK=[0,1;−6,−5]，A−LC=[−9,1;−20,0]。2. u=−K(x−e)，因此误差以+BK作用于x。3. 零。4. 不保证。</li>
+</ol>
+</details>
+<p>学习时先完成本课练习并澄清疑问，再进入下一课；网页制作进度不代表学习进度。</p>
+</article><div class="page-footer"><a href="29-Luenberger状态观测器.html">← 上一课</a><a href="31-离散状态反馈与综合设计.html">下一课 →</a></div></main>
+<nav class="sidebar" aria-label="课程总目录"><div class="sidebar-title">课程总目录</div><a class="nav-home" href="../index.html">首页 · 课程目录</a><div class="group-label">按学习阶段浏览</div><details class="nav-phase"><summary><span class="phase-title">阶段 0｜经典控制基础与补桥</span><small>第 1–16 课：反馈、PID、稳定性与频域设计</small></summary><details class="nav-course"><summary><span class="course-number">第 1 课</span><span class="course-title">反馈控制与第一个 PD 控制器</span></summary><div class="nav-course-links"><a class="" href="01-反馈控制.html">讲解</a><a class="" href="../reviews/01-反馈控制.html">复习</a><a class="" href="../formulas/01-反馈控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 2 课</span><span class="course-title">二阶系统、阻尼比与超调量</span></summary><div class="nav-course-links"><a class="" href="02-二阶系统.html">讲解</a><a class="" href="../reviews/02-二阶系统.html">复习</a><a class="" href="../formulas/02-二阶系统.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 3 课</span><span class="course-title">拉普拉斯变换与传递函数</span></summary><div class="nav-course-links"><a class="" href="03-传递函数.html">讲解</a><a class="" href="../reviews/03-传递函数.html">复习</a><a class="" href="../formulas/03-传递函数.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 4 课</span><span class="course-title">极点、零点与系统稳定性</span></summary><div class="nav-course-links"><a class="" href="04-极点与零点.html">讲解</a><a class="" href="../reviews/04-极点与零点.html">复习</a><a class="" href="../formulas/04-极点与零点.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 5 课</span><span class="course-title">时间响应指标与 PD 控制器参数设计</span></summary><div class="nav-course-links"><a class="" href="05-PD参数设计.html">讲解</a><a class="" href="../reviews/05-PD参数设计.html">复习</a><a class="" href="../formulas/05-PD参数设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 6 课</span><span class="course-title">积分控制、稳态误差与积分饱和</span></summary><div class="nav-course-links"><a class="" href="06-积分控制.html">讲解</a><a class="" href="../reviews/06-积分控制.html">复习</a><a class="" href="../formulas/06-积分控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 7 课</span><span class="course-title">稳态误差与终值定理</span></summary><div class="nav-course-links"><a class="" href="07-稳态误差与终值定理.html">讲解</a><a class="" href="../reviews/07-稳态误差与终值定理.html">复习</a><a class="" href="../formulas/07-稳态误差与终值定理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 8 课</span><span class="course-title">PID 参数整定与积分抗饱和</span></summary><div class="nav-course-links"><a class="" href="08-PID整定与抗饱和.html">讲解</a><a class="" href="../reviews/08-PID整定与抗饱和.html">复习</a><a class="" href="../formulas/08-PID整定与抗饱和.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 9 课</span><span class="course-title">数字 PID 实现</span></summary><div class="nav-course-links"><a class="" href="09-数字PID实现.html">讲解</a><a class="" href="../reviews/09-数字PID实现.html">复习</a><a class="" href="../formulas/09-数字PID实现.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 10 课</span><span class="course-title">Routh稳定判据</span></summary><div class="nav-course-links"><a class="" href="10-Routh稳定判据.html">讲解</a><a class="" href="../reviews/10-Routh稳定判据.html">复习</a><a class="" href="../formulas/10-Routh稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 11 课</span><span class="course-title">根轨迹与增益设计</span></summary><div class="nav-course-links"><a class="" href="11-根轨迹与增益设计.html">讲解</a><a class="" href="../reviews/11-根轨迹与增益设计.html">复习</a><a class="" href="../formulas/11-根轨迹与增益设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 12 课</span><span class="course-title">频率响应与 Bode 图</span></summary><div class="nav-course-links"><a class="" href="12-频率响应与Bode图.html">讲解</a><a class="" href="../reviews/12-频率响应与Bode图.html">复习</a><a class="" href="../formulas/12-频率响应与Bode图.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 13 课</span><span class="course-title">Nyquist 稳定判据——沿着曲线判断闭环稳定性</span></summary><div class="nav-course-links"><a class="" href="13-Nyquist稳定判据.html">讲解</a><a class="" href="../reviews/13-Nyquist稳定判据.html">复习</a><a class="" href="../formulas/13-Nyquist稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 14 课</span><span class="course-title">增益裕度与相位裕度</span></summary><div class="nav-course-links"><a class="" href="14-增益裕度与相位裕度.html">讲解</a><a class="" href="../reviews/14-增益裕度与相位裕度.html">复习</a><a class="" href="../formulas/14-增益裕度与相位裕度.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 15 课</span><span class="course-title">超前与滞后校正</span></summary><div class="nav-course-links"><a class="" href="15-超前与滞后校正.html">讲解</a><a class="" href="../reviews/15-超前与滞后校正.html">复习</a><a class="" href="../formulas/15-超前与滞后校正.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 16 课</span><span class="course-title">闭环带宽、延迟与鲁棒性</span></summary><div class="nav-course-links"><a class="" href="16-闭环带宽与延迟鲁棒性.html">讲解</a><a class="" href="../reviews/16-闭环带宽与延迟鲁棒性.html">复习</a><a class="" href="../formulas/16-闭环带宽与延迟鲁棒性.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 1｜数学与模型衔接</span><small>第 17–19 课：矩阵、特征值、传递函数与状态空间</small></summary><details class="nav-course"><summary><span class="course-number">第 17 课</span><span class="course-title">矩阵与状态向量——现代控制的数学语言</span></summary><div class="nav-course-links"><a class="" href="17-矩阵与状态向量.html">讲解</a><a class="" href="../reviews/17-矩阵与状态向量.html">复习</a><a class="" href="../formulas/17-矩阵与状态向量.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 18 课</span><span class="course-title">特征值与系统动态</span></summary><div class="nav-course-links"><a class="" href="18-特征值与系统动态.html">讲解</a><a class="" href="../reviews/18-特征值与系统动态.html">复习</a><a class="" href="../formulas/18-特征值与系统动态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 19 课</span><span class="course-title">传递函数到状态空间</span></summary><div class="nav-course-links"><a class="" href="19-传递函数到状态空间.html">讲解</a><a class="" href="../reviews/19-传递函数到状态空间.html">复习</a><a class="" href="../formulas/19-传递函数到状态空间.html">公式</a></div></details></details><details class="nav-phase" open><summary><span class="phase-title">阶段 2｜现代线性控制核心</span><small>第 20–31 课：状态响应、反馈、LQR、估计与离散综合</small></summary><details class="nav-course"><summary><span class="course-number">第 20 课</span><span class="course-title">状态空间基础</span></summary><div class="nav-course-links"><a class="" href="20-状态空间基础.html">讲解</a><a class="" href="../reviews/20-状态空间基础.html">复习</a><a class="" href="../formulas/20-状态空间基础.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 21 课</span><span class="course-title">相平面与状态轨迹</span></summary><div class="nav-course-links"><a class="" href="21-相平面与状态轨迹.html">讲解</a><a class="" href="../reviews/21-相平面与状态轨迹.html">复习</a><a class="" href="../formulas/21-相平面与状态轨迹.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 22 课</span><span class="course-title">连续系统离散化</span></summary><div class="nav-course-links"><a class="" href="22-连续系统离散化.html">讲解</a><a class="" href="../reviews/22-连续系统离散化.html">复习</a><a class="" href="../formulas/22-连续系统离散化.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 23 课</span><span class="course-title">可控性与可达状态</span></summary><div class="nav-course-links"><a class="" href="23-可控性与可达状态.html">讲解</a><a class="" href="../reviews/23-可控性与可达状态.html">复习</a><a class="" href="../formulas/23-可控性与可达状态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 24 课</span><span class="course-title">线性系统的Lyapunov稳定性</span></summary><div class="nav-course-links"><a class="" href="24-线性系统的Lyapunov稳定性.html">讲解</a><a class="" href="../reviews/24-线性系统的Lyapunov稳定性.html">复习</a><a class="" href="../formulas/24-线性系统的Lyapunov稳定性.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 25 课</span><span class="course-title">状态反馈与极点配置</span></summary><div class="nav-course-links"><a class="" href="25-状态反馈与极点配置.html">讲解</a><a class="" href="../reviews/25-状态反馈与极点配置.html">复习</a><a class="" href="../formulas/25-状态反馈与极点配置.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 26 课</span><span class="course-title">LQR最优状态反馈</span></summary><div class="nav-course-links"><a class="" href="26-LQR最优状态反馈.html">讲解</a><a class="" href="../reviews/26-LQR最优状态反馈.html">复习</a><a class="" href="../formulas/26-LQR最优状态反馈.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 27 课</span><span class="course-title">状态反馈的参考跟踪</span></summary><div class="nav-course-links"><a class="" href="27-状态反馈的参考跟踪.html">讲解</a><a class="" href="../reviews/27-状态反馈的参考跟踪.html">复习</a><a class="" href="../formulas/27-状态反馈的参考跟踪.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 28 课</span><span class="course-title">可观测性与输出信息</span></summary><div class="nav-course-links"><a class="" href="28-可观测性与输出信息.html">讲解</a><a class="" href="../reviews/28-可观测性与输出信息.html">复习</a><a class="" href="../formulas/28-可观测性与输出信息.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 29 课</span><span class="course-title">Luenberger状态观测器</span></summary><div class="nav-course-links"><a class="" href="29-Luenberger状态观测器.html">讲解</a><a class="" href="../reviews/29-Luenberger状态观测器.html">复习</a><a class="" href="../formulas/29-Luenberger状态观测器.html">公式</a></div></details><details class="nav-course" open><summary><span class="course-number">第 30 课</span><span class="course-title">观测器反馈与分离原理</span></summary><div class="nav-course-links"><a class="active" href="30-观测器反馈与分离原理.html">讲解</a><a class="" href="../reviews/30-观测器反馈与分离原理.html">复习</a><a class="" href="../formulas/30-观测器反馈与分离原理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 31 课</span><span class="course-title">离散状态反馈与综合设计</span></summary><div class="nav-course-links"><a class="" href="31-离散状态反馈与综合设计.html">讲解</a><a class="" href="../reviews/31-离散状态反馈与综合设计.html">复习</a><a class="" href="../formulas/31-离散状态反馈与综合设计.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 3｜非线性控制进阶</span><small>后续计划：Lyapunov、LaSalle 与非线性控制</small></summary><div class="phase-coming">该阶段课程将在学习进度推进后加入。</div></details><details class="nav-phase"><summary><span class="phase-title">阶段 4｜机器人与车辆实践</span><small>控制器综合设计、MATLAB 与 C++ 实现</small></summary><details class="nav-course"><summary><span class="course-number">第 32 课</span><span class="course-title">机器人控制器综合设计</span></summary><div class="nav-course-links"><a class="" href="32-机器人控制器综合设计.html">讲解</a><a class="" href="../reviews/32-机器人控制器综合设计.html">复习</a><a class="" href="../formulas/32-机器人控制器综合设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 33 课</span><span class="course-title">MATLAB 仿真与 C++ 控制循环</span></summary><div class="nav-course-links"><a class="" href="33-MATLAB仿真与C++控制循环.html">讲解</a><a class="" href="../reviews/33-MATLAB仿真与C++控制循环.html">复习</a><a class="" href="../formulas/33-MATLAB仿真与C++控制循环.html">公式</a></div></details></details></nav>
+</div><script data-demo-module="demo-core">
+/* 共享交互基础设施：课程页面按需加载各 demo 的普通脚本，兼容 file:// 离线打开。 */
+(function(){
+  'use strict';
+  const registry = new Map();
+  const DEG = 180/Math.PI;
+  function color(light,dark){return document.documentElement.dataset.theme==='dark'?dark:light;}
+  function poleRoots(J,Kp,Kd){
+    const d=Kd*Kd-4*J*Kp;
+    return d>=0 ? [{re:(-Kd+Math.sqrt(d))/(2*J),im:0},{re:(-Kd-Math.sqrt(d))/(2*J),im:0}]
+      : [{re:-Kd/(2*J),im:Math.sqrt(-d)/(2*J)},{re:-Kd/(2*J),im:-Math.sqrt(-d)/(2*J)}];
+  }
+  function solve(J,Kp,Kd){
+    let q=0,v=0,t=0;const dt=.008,out=[],qr=Math.PI/2;
+    const rhs=(a,b)=>[b,(Kp*(qr-a)-Kd*b)/J];
+    for(let i=0;i<=750;i++){
+      out.push([t,q*DEG]);
+      const a=rhs(q,v),b=rhs(q+dt*a[0]/2,v+dt*a[1]/2),c=rhs(q+dt*b[0]/2,v+dt*b[1]/2),d=rhs(q+dt*c[0],v+dt*c[1]);
+      q+=dt*(a[0]+2*b[0]+2*c[0]+d[0])/6;
+      v+=dt*(a[1]+2*b[1]+2*c[1]+d[1])/6;t+=dt;
+    }
+    return out;
+  }
+  function canvasReady(canvas){
+    const w=Math.max(canvas.clientWidth,260),h=canvas.clientHeight||245,dpr=window.devicePixelRatio||1;
+    canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+    const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return {ctx,w,h};
+  }
+  function mountPD(node, options){
+    const J0=Number(node.dataset.j||1),Kp0=Number(node.dataset.kp||16),Kd0=Number(node.dataset.kd??8);
+    node.innerHTML=`<p class="demo-title">${options.title}</p><p class="demo-note">理想单关节模型，目标 90°、初始角度及速度为零；本地浏览器计算。</p>
+      <div class="demo-controls">
+      <div class="control"><label>J（kg·m²）<output data-out="j"></output></label><input data-param="j" type="range" min="0.5" max="5" step="0.5"></div>
+      <div class="control"><label>Kp（N·m/rad）<output data-out="kp"></output></label><input data-param="kp" type="range" min="2" max="36" step="2"></div>
+      <div class="control"><label>Kd（N·m·s/rad）<output data-out="kd"></output></label><input data-param="kd" type="range" min="0" max="24" step="1"></div>
+      </div><canvas class="demo-canvas" role="img" aria-label="互动数学模型的曲线"></canvas>
+      <div class="demo-meta" aria-live="polite"></div><div class="demo-caption">${options.caption}</div>`;
+    const inputs={};node.querySelectorAll('input').forEach(el=>inputs[el.dataset.param]=el);
+    inputs.j.value=String(J0);inputs.kp.value=String(Kp0);inputs.kd.value=String(Kd0);
+    const canvas=node.querySelector('canvas'),meta=node.querySelector('.demo-meta');
+    function draw(){
+      const J=+inputs.j.value,Kp=+inputs.kp.value,Kd=+inputs.kd.value;
+      for(const name of ['j','kp','kd'])node.querySelector('[data-out="'+name+'"]').textContent=inputs[name].value;
+      const z=Kd/(2*Math.sqrt(J*Kp)),wn=Math.sqrt(Kp/J);
+      const details=options.render(canvas,J,Kp,Kd);
+      meta.replaceChildren();
+      for(const str of [`阻尼比 ζ = ${z.toFixed(3)}`,`ωn = ${wn.toFixed(3)} rad/s`,...details]){
+        const s=document.createElement('span');s.textContent=str;meta.appendChild(s);
+      }
+    }
+    Object.values(inputs).forEach(el=>el.addEventListener('input',draw));
+    window.addEventListener('robot-theme-changed',draw);
+    if(typeof ResizeObserver!=='undefined')new ResizeObserver(draw).observe(canvas);
+    else window.addEventListener('resize',draw);
+    draw();
+  }
+  window.NoteDemos={register(name,mount){
+    if(registry.has(name))throw new Error('重复的演示名称：'+name);
+    registry.set(name,mount);
+  }, utils:{color,poleRoots,solve,canvasReady,mountPD}};
+  function boot(){
+    document.querySelectorAll('.demo[data-demo]').forEach(node=>{
+      const name=node.dataset.demo;
+      try{
+        if(!registry.has(name))throw new Error(`模块「${name}」没有注册`);
+        registry.get(name)(node,window.NoteDemos.utils);
+      }catch(err){
+        node.textContent=`演示加载失败（${name}）：${err.message}。正文和公式仍可阅读。`;
+        node.classList.add('demo-error');console.error(err);
+      }
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+
+</script>
+<script data-demo-module="modern-lab">
+(function(){
+'use strict';let serial=0;
+const specs={
+response:[['q','初始位置 / rad',-2,2,.1,1],['u','常值输入',0,2,.1,1]],
+phase:[['b','阻尼 b',-1,6,.1,2],['k','刚度 k',1,6,.1,4]],
+discrete:[['ts','采样周期 / s',.05,1.5,.05,.1],['x0','初态 x₀',.2,2,.1,1]],
+controllable:[['g','第二状态输入系数 γ',0,1.5,.05,1],['horizon','终点时间 T / s',.5,4,.1,2]],
+lyapunov:[['rate','矩阵速率倍率 a',.2,3,.1,1],['q','初始位置',.2,2,.1,1]],
+feedback:[['k1','位置反馈 k₁',.5,30,.5,6],['k2','速度反馈 k₂',.2,15,.1,5]],
+lqr:[['q1','位置权重 q₁',.2,16,.2,4],['q2','速度权重 q₂',0,8,.2,1],['r','输入权重 r',.2,8,.2,1]],
+tracking:[['w','参考角频率 / rad·s⁻¹',.2,3,.1,1],['kp','位置反馈',1,12,.5,4],['kd','速度反馈',.5,8,.5,3]],
+observable:[['g','测量系数 γ',0,1.5,.05,1],['a','第二状态初值 a',-2,2,.1,1]],
+observer:[['l1','观测器 l₁',1,24,.5,9],['l2','观测器 l₂',1,100,1,20]],
+separation:[['c','控制极点速率倍率',.5,2,.1,1],['o','观测极点速率倍率',.3,3,.1,1]],
+digital:[['ts','采样周期 / s',.05,.4,.05,.1],['p1','反馈极点 p₁',.1,1.1,.05,.6],['p2','反馈极点 p₂',.1,1.1,.05,.7]]};
+const fmt=(x,n=4)=>Number(x).toFixed(n);
+function rk(f,t,x,h){const a=f(t,x),b=f(t+h/2,x.map((z,i)=>z+h*a[i]/2)),c=f(t+h/2,x.map((z,i)=>z+h*b[i]/2)),d=f(t+h,x.map((z,i)=>z+h*c[i]));return x.map((z,i)=>z+h*(a[i]+2*b[i]+2*c[i]+d[i])/6);}
+function simulate(f,x0,end=8,h=.005){const rows=[];let x=x0.slice();for(let i=0;i<=Math.round(end/h);i++){if(!x.every(Number.isFinite)||Math.max(...x.map(Math.abs))>1e6)break;if(i%4===0)rows.push([i*h,...x]);x=rk(f,i*h,x,h);}return rows;}
+function curve(name,points,dots=false){return {name,points,dots};}
+function col(name,rows,i){return curve(name,rows.map(r=>[r[0],r[i]]));}
+function panel(title,xlabel,ylabel,curves,bounds){return {title,xlabel,ylabel,curves,bounds};}
+function quadratic(a,b){const d=a*a-4*b;return d>=0?`${fmt((-a+Math.sqrt(d))/2)}, ${fmt((-a-Math.sqrt(d))/2)}`:`${fmt(-a/2)} ± ${fmt(Math.sqrt(-d)/2)}j`;}
+function gramian(g,T){const a=(1-Math.exp(-2*T))/2,b=g*(1-Math.exp(-3*T))/3,c=g*g*(1-Math.exp(-4*T))/4,det=a*c-b*b;return {a,b,c,det,energy:g===0?Infinity:a/det};}
+function digitalGains(ts,p1,p2){const k1=(1-p1)*(1-p2)/(ts*ts),k2=(1-p1*p2)/ts+ts*k1/2;return {k1,k2,l1:1.5,l2:.56/ts};}
+function evaluate(mode,p){let panels=[],status='',meta={};
+if(mode==='response'){
+ const rows=[];for(let i=0;i<=800;i++){let t=i/100,free=p.q*(2*Math.exp(-t)-Math.exp(-2*t)),forced=p.u/2*(1-2*Math.exp(-t)+Math.exp(-2*t));rows.push([t,free,forced,free+forced]);}
+ panels=[panel('初态响应与输入响应的叠加','t / s','位置 / rad',[col('自由响应',rows,1),col('强迫响应',rows,2),col('总响应',rows,3)])];status=`A=[0,1;−2,−3]，B=[0;1]；v(0)=0\n初始总位置 ${fmt(p.q)}，理论平衡位置 u/2=${fmt(p.u/2)}。`;meta={equilibrium:p.u/2};
+}else if(mode==='phase'){
+ const rows=simulate((t,x)=>[x[1],-p.k*x[0]-p.b*x[1]],[1,0],8);
+ panels=[panel('同一运动的时间表示','t / s','状态（不同单位）',[col('q / rad',rows,1),col('v / rad·s⁻¹',rows,2)]),panel('相轨迹：初态为(1,0)','q / rad','v / rad·s⁻¹',[curve('状态轨迹',rows.map(r=>[r[1],r[2]]))])];status=`特征值：${quadratic(p.b,p.k)}\n${p.b>0?'阻尼为正，状态收敛。':p.b===0?'零阻尼，理想能量保持，不渐近收敛。':'负阻尼，状态能量增长。'}`;
+}else if(mode==='discrete'){
+ let exact=[],euler=[],x=p.x0;for(let k=0;k<=12;k++){exact.push([k*p.ts,p.x0*Math.exp(-2*k*p.ts)]);euler.push([k*p.ts,x]);x*=1-2*p.ts;}
+ panels=[panel('无输入 ẋ=−2x 的两种采样序列','t / s','x',[curve('精确离散',exact,true),curve('Euler近似',euler,true)])];status=`Ad=${fmt(Math.exp(-2*p.ts))}，Bd=${fmt((1-Math.exp(-2*p.ts))/2)}\nEuler因子=${fmt(1-2*p.ts)}；${Math.abs(1-2*p.ts)<1?'Euler在当前步长衰减。':Math.abs(1-2*p.ts)===1?'Euler处在边界，非渐近稳定。':'Euler已失稳，但连续对象仍稳定。'}`;meta={ad:Math.exp(-2*p.ts),bd:(1-Math.exp(-2*p.ts))/2};
+}else if(mode==='controllable'){
+ const w=gramian(p.g,p.horizon),energy=[];for(let i=1;i<=150;i++){let g=i/100;energy.push([g,Math.log10(gramian(g,p.horizon).energy)]);}
+ panels=[panel('可控矩阵的两列方向','第一状态分量','第二状态分量',[curve('B',[ [0,0],[1,p.g] ]),curve('AB',[ [0,0],[-1,-2*p.g] ])]),panel('目标[0,1]ᵀ的无约束最小输入平方能量','γ','log₁₀(Emin)',[curve('Emin随输入作用变弱而增大',energy)])];
+ status=`Cctrl=[1,−1;${fmt(p.g)},${fmt(-2*p.g)}]；det=${fmt(-p.g)}；rank=${p.g===0?1:2}\nWc=[${fmt(w.a)},${fmt(w.b)};${fmt(w.b)},${fmt(w.c)}]\n${p.g===0?'第二状态不可达，Gramian奇异。':'最小能量='+fmt(w.energy,2)+'；此值不考虑输入限幅。'}`;meta={rank:p.g===0?1:2,gramian:w};
+}else if(mode==='lyapunov'){
+ const rows=simulate((t,x)=>[p.rate*x[1],p.rate*(-2*x[0]-3*x[1])],[p.q,0],8);
+ const v=rows.map(z=>[z[0],1.25*z[1]*z[1]+.5*z[1]*z[2]+.25*z[2]*z[2]]);
+ panels=[panel('状态分量未必各自单调','t / s','状态（不同单位）',[col('x₁（模型坐标）',rows,1),col('x₂（模型坐标）',rows,2)]),panel('构造的Lyapunov函数严格衰减','t / s','V=xᵀPx',[curve('V',v)])];status=`A=a[0,1;−2,−3]（整体时间缩放，x₂不直接等于同一物理时间下的速度）；P=[1.25,.25;.25,.25]\nAᵀP+PA=−aI，V̇=−${fmt(p.rate)}(q²+v²)。V(0)=${fmt(1.25*p.q*p.q)}。`;meta={values:v};
+}else if(mode==='feedback'||mode==='lqr'){
+ const k1=mode==='feedback'?p.k1:Math.sqrt(p.q1/p.r),k2=mode==='feedback'?p.k2:Math.sqrt(p.q2/p.r+2*k1);
+ const rows=simulate((t,x)=>[x[1],-k1*x[0]-k2*x[1]],[1,0],8);
+ panels=[panel('初态位置1、速度0，目标为零','t / s','q / rad',[col('位置',rows,1)]),panel('更快响应需要同时看输入','t / s','u（归一惯量）',[curve('u=−Kx',rows.map(z=>[z[0],-k1*z[1]-k2*z[2]]))])];status=`K=[${fmt(k1)},${fmt(k2)}]；闭环特征值 ${quadratic(k2,k1)}\n初始输入 u(0)=−${fmt(k1)}；本图无输入限幅。`;meta={k1,k2};
+}else if(mode==='tracking'){
+ function rhs(ff){return (t,x)=>[x[1],(ff?-p.w*p.w*Math.sin(p.w*t):0)-p.kp*(x[0]-Math.sin(p.w*t))-p.kd*(x[1]-p.w*Math.cos(p.w*t))];}
+ const yes=simulate(rhs(true),[0,0],16),no=simulate(rhs(false),[0,0],16);
+ panels=[panel('运动参考：初始参考速度与实际不同','t / s','q / rad',[curve('参考',yes.map(z=>[z[0],Math.sin(p.w*z[0])])),col('有加速度前馈',yes,1),col('无加速度前馈',no,1)]),panel('位置跟踪误差 q−qr','t / s','e / rad',[curve('有前馈',yes.map(z=>[z[0],z[1]-Math.sin(p.w*z[0])])),curve('无前馈',no.map(z=>[z[0],z[1]-Math.sin(p.w*z[0])]))])];status=`qr=sin(ωt)，vr=ωcos(ωt)，ar=−ω²sin(ωt)。\n精确模型与前馈下误差特征式 s²+${fmt(p.kd)}s+${fmt(p.kp)}=0；图中含起始速度误差。`;
+}else if(mode==='observable'){
+ const rows=[];for(let i=0;i<=600;i++){let t=i/100;rows.push([t,Math.exp(-t),Math.exp(-t)+p.g*p.a*Math.exp(-2*t)]);}
+ panels=[panel('内部第二初态不同，输出能否分开？','t / s','y',[col('x₂(0)=0',rows,1),col('x₂(0)=a',rows,2)])];status=`O=[1,γ;−1,−2γ]，det=−γ=${fmt(-p.g)}；rank=${p.g===0?1:2}\n${p.g===0?'第二状态不进入输出，两条测量完全重合。':'理论可观；γ很小时，有限噪声仍可能掩盖差异。'}`;meta={rank:p.g===0?1:2};
+}else if(mode==='observer'){
+ const rows=simulate((t,e)=>[-p.l1*e[0]+e[1],-p.l2*e[0]],[1,0],5);
+ panels=[panel('初始误差[1,0]ᵀ的收敛与峰值','t / s','误差（位置、速度单位不同）',[col('位置误差',rows,1),col('速度误差',rows,2)])];status=`L=[${fmt(p.l1)};${fmt(p.l2)}]，误差极点 ${quadratic(p.l1,p.l2)}\n无噪声、无模型误差；较快参数可能产生更大的中间速度估计峰值。`;
+}else if(mode==='separation'){
+ const k1=6*p.c*p.c,k2=5*p.c,l1=9*p.o,l2=20*p.o*p.o;
+ const rows=simulate((t,z)=>{const u=-k1*z[2]-k2*z[3],res=z[0]-z[2];return [z[1],u,z[3]+l1*res,u+l2*res];},[1,0,0,0],8);
+ panels=[panel('真实与估计状态连接后的响应','t / s','q / rad',[col('真实位置',rows,1),col('估计位置',rows,3)]),panel('估计状态反馈产生的实际命令','t / s','u',[curve('u=−Kx̂',rows.map(z=>[z[0],-k1*z[3]-k2*z[4]]))])];
+ status=`控制极点 −${fmt(2*p.c)}, −${fmt(3*p.c)}；误差极点 −${fmt(4*p.o)}, −${fmt(5*p.o)}\nK=[${fmt(k1)},${fmt(k2)}]，L=[${fmt(l1)};${fmt(l2)}]。估计初态为零，因此初始输入为零。`;meta={k1,k2,l1,l2};
+}else if(mode==='digital'){
+ const {k1,k2,l1,l2}=digitalGains(p.ts,p.p1,p.p2);let q=1,v=0,hq=0,hv=0,rows=[],inputs=[];
+ for(let k=0;k<=Math.ceil(8/p.ts);k++){
+ const u=-k1*hq-k2*hv;rows.push([k*p.ts,q,hq]);inputs.push([k*p.ts,u]);
+ const qn=q+p.ts*v+p.ts*p.ts*u/2,vn=v+p.ts*u,res=q-hq,hqn=hq+p.ts*hv+p.ts*p.ts*u/2+l1*res,hvn=hv+p.ts*u+l2*res;
+ q=qn;v=vn;hq=hqn;hv=hvn;if(Math.max(Math.abs(q),Math.abs(v))>1e6)break;
+ }
+ panels=[panel('逐拍估计反馈：数字点为采样状态','t / s','q / rad',[curve('真实',rows.map(z=>[z[0],z[1]]),true),curve('估计',rows.map(z=>[z[0],z[2]]),true)]),panel('每拍控制输入（图中连线仅辅助读数）','t / s','u',[curve('控制输入',inputs,true)])];status=`Kd=[${fmt(k1)},${fmt(k2)}]，Ld=[${fmt(l1)};${fmt(l2)}]\n反馈极点 ${fmt(p.p1)},${fmt(p.p2)}；观测误差极点固定0.2、0.3。\n${Math.max(Math.abs(p.p1),Math.abs(p.p2))<1?'理想联合离散闭环渐近稳定。':'反馈极点到达或越出单位圆，不保证渐近稳定。'}`;meta={k1,k2,l1,l2};
+}
+return {panels,status,meta};
+}
+const colors=['#5cdbd3','#ffb86b','#c3a5ff'];
+function chart(p,id){
+ const all=p.curves.flatMap(c=>c.points).filter(z=>Number.isFinite(z[0]+z[1]));let xmin=Math.min(0,...all.map(z=>z[0])),xmax=Math.max(.1,...all.map(z=>z[0])),ymin=Math.min(0,...all.map(z=>z[1])),ymax=Math.max(.1,...all.map(z=>z[1]));
+ let pad=(ymax-ymin)*.1;ymin-=pad;ymax+=pad;if(p.bounds)[xmin,xmax,ymin,ymax]=p.bounds;
+ const X=x=>85+(x-xmin)/(xmax-xmin)*680,Y=y=>45+(ymax-y)/(ymax-ymin)*300;
+ let svg=`<svg viewBox="0 0 850 430" role="img" aria-label="${p.title}" style="width:100%;display:block;background:#101b2b;border-radius:10px"><defs><clipPath id="${id}"><rect x="85" y="45" width="680" height="300"/></clipPath></defs>`;
+ for(let i=0;i<=5;i++){let x=xmin+(xmax-xmin)*i/5,y=ymin+(ymax-ymin)*i/5;svg+=`<path d="M${X(x)} 45V345M85 ${Y(y)}H765" stroke="#33465d"/><g fill="#dbe9fa" font-size="16"><text x="${X(x)}" y="375" text-anchor="middle">${x.toFixed(2)}</text><text x="75" y="${Y(y)+5}" text-anchor="end">${Math.abs(y)<1000?y.toFixed(2):y.toExponential(1)}</text></g>`;}
+ if(ymin<=0&&ymax>=0)svg+=`<path d="M85 ${Y(0)}H765" stroke="#90a6c0"/>`;
+ if(xmin<=0&&xmax>=0)svg+=`<path d="M${X(0)} 45V345" stroke="#90a6c0"/>`;
+ svg+=`<g clip-path="url(#${id})">`;
+ p.curves.forEach((c,i)=>{let col=colors[i%3],points=c.points.filter(z=>Number.isFinite(z[0]+z[1]));svg+=`<path d="${points.map((z,i)=>(i?'L':'M')+X(z[0]).toFixed(2)+' '+Y(z[1]).toFixed(2)).join(' ')}" fill="none" stroke="${col}" stroke-width="2.5"/>`;if(c.dots)points.forEach(z=>svg+=`<circle cx="${X(z[0])}" cy="${Y(z[1])}" r="3.5" fill="${col}"/>`);});
+ svg+=`</g><text x="425" y="417" text-anchor="middle" fill="#edf6ff" font-size="19">${p.xlabel}</text><text x="85" y="30" fill="#edf6ff" font-size="17">${p.ylabel}</text></svg>`;
+ return `<h3 style="font-size:16px;margin:20px 0 8px">${p.title}</h3>`+svg+'<div class="modern-legend">'+p.curves.map((c,i)=>`<span style="color:${colors[i%3]};background:#101b2b;padding:4px 8px;border-radius:4px">${c.name}</span>`).join('')+'</div>';
+}
+window.NoteDemos.register('modern-lab',node=>{
+ const id=++serial,mode=node.dataset.mode,schema=specs[mode];if(!schema)throw Error('未知现代控制模式');
+ node.innerHTML='<p class="demo-note">本地浏览器计算的理想模型；参数作用与限制请结合正文阅读。不同状态量的单位会分别注明。</p><div class="demo-controls">'+schema.map(([key,title,min,max,step,val])=>`<label>${title} <output data-out="${key}"></output><input type="range" data-p="${key}" min="${min}" max="${max}" step="${step}" value="${val}" style="width:100%"></label>`).join('')+'</div><p data-status class="modern-status" aria-live="polite"></p><div data-charts></div><button type="button" data-reset>恢复本课参数</button>';
+ const inputs=[...node.querySelectorAll('input')];function draw(){let p={};inputs.forEach(e=>{p[e.dataset.p]=+e.value;node.querySelector(`[data-out="${e.dataset.p}"]`).textContent=fmt(+e.value,2);});let result=evaluate(mode,p);node.querySelector('[data-status]').textContent=result.status;node.querySelector('[data-charts]').innerHTML=result.panels.map((p,j)=>chart(p,`modern-${id}-${j}`)).join('');}
+ inputs.forEach(e=>e.addEventListener('input',draw));node.querySelector('[data-reset]').addEventListener('click',()=>{inputs.forEach((e,i)=>e.value=schema[i][5]);draw();});draw();
+});
+window.ModernTeachingMath={evaluate,gramian,digitalGains,specs,rk,simulate};
+})();
+
+</script></body></html>

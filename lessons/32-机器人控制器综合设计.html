@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
+<title>第 32 课 · 机器人控制器综合设计 · 课程讲解｜机器人控制理论笔记</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('robot-note-theme')||'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
+<link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../courses/32-机器人控制器综合设计/demos/design.css">
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true,packages:{'[+]':['base','ams']}},svg:{fontCache:'local'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
+<script defer src="../assets/mathjax-tex-svg.js"></script><script defer src="../assets/theme.js"></script>
+</head><body>
+<header class="mast"><div class="mast-inner"><a class="brand" href="../index.html">机器人控制理论笔记 <small>持续更新 · 离线 HTML</small></a><div class="top-actions"><span class="top-indicator">已整理 33 课</span><button id="themeToggle" type="button" class="theme-toggle" aria-label="切换日间与夜间模式" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">夜间模式</span></button></div></div></header>
+<div class="layout">
+<aside class="toc" aria-label="本章目录"><div class="toc-label">本章目录</div><a class="h2" href="#section-1">一、先把控制任务说清楚</a><a class="h2" href="#section-2">二、把全部部件放进闭环</a><a class="h2" href="#section-3">三、各个部分分别负责什么？</a><a class="h2" href="#section-4">四、带数字手算一次控制器输出</a><a class="h2" href="#section-5">五、按顺序设计，而不是同时乱调</a><a class="h3" href="#section-6">第 1 步：定义性能和安全边界</a><a class="h3" href="#section-7">第 2 步：建立对象模型</a><a class="h3" href="#section-8">第 3 步：先调 P 与 D</a><a class="h3" href="#section-9">第 4 步：检查开环裕度与闭环带宽</a><a class="h3" href="#section-10">第 5 步：处理噪声和稳态偏差</a><a class="h3" href="#section-11">第 6 步：检查限幅与变化工况</a><a class="h2" href="#section-12">六、交互实验：PID 组件如何共同影响响应？</a><a class="h2" href="#section-13">七、调参时每次只改变一个主要因素</a><a class="h2" href="#section-14">八、MATLAB：离散 PID、限幅和条件积分</a><a class="h2" href="#section-15">九、仿真通过不等于实机安全</a><a class="h2" href="#section-16">十、本课公式卡</a><a class="h2" href="#section-17">十一、第 32 课课后练习</a><a class="h3" href="#section-18">练习 1：手算一拍 PID</a><a class="h3" href="#section-19">练习 2：积分与限幅</a><a class="h3" href="#section-20">练习 3：解释微分滤波</a><a class="h3" href="#section-21">练习 4：制定测试表</a></aside>
+<main class="main" id="content"><div class="eyebrow">第 32 课 / 课程讲解</div><div class="chapter-tabs"><a class="active" href="32-机器人控制器综合设计.html">课程讲解</a><a class="" href="../reviews/32-机器人控制器综合设计.html">复习笔记</a><a class="" href="../formulas/32-机器人控制器综合设计.html">公式手册</a></div><article class="prose"><h1>第 32 课：机器人控制器综合设计</h1>
+<blockquote>
+<p>第 4 阶段｜把 PID、滤波、限幅和采样放进同一个控制方案</p>
+</blockquote>
+<p>前面我们分开学过 PD/PID、积分饱和、数字采样、Bode 图、稳定裕度、带宽和延迟。本课把它们放回同一个机器人关节里，按工程设计流程组合起来。</p>
+<p>重点不是找一组“万能 PID 数字”，而是学会问对问题：要控制什么量？对象模型是什么？电机能不能执行计算出的命令？采样和滤波是否合适？换了负载之后还稳定吗？</p>
+<h2 id="section-1">一、先把控制任务说清楚</h2>
+<p>以单关节机械臂为例，目标角度为 $q_d(t)$，编码器测得角度 $q(t)$，电机接受力矩命令 $\tau(t)$。误差是：</p>
+<p>$$
+e(t)=q_d(t)-q(t)
+$$</p>
+<p>先用一个简化刚体模型：</p>
+<p>$$
+J\ddot q+b\dot q=\tau-d
+$$</p>
+<p>$d$ 汇总重力、摩擦和外部负载等扰动。这个模型忽略柔性、间隙、复杂摩擦和电机电气动态，适合帮助我们搭建第一版控制器。</p>
+<p>设计前先确定指标：</p>
+<ul>
+<li>控制目标是位置、速度还是力矩？</li>
+<li>角度用 rad 还是 deg？增益单位是否匹配？</li>
+<li>允许多大跟踪误差、超调和稳定时间？</li>
+<li>电机连续和峰值力矩分别是多少？</li>
+<li>控制周期、测量噪声和通信延迟大概多大？</li>
+</ul>
+<p><img alt="综合闭环从目标、控制器、执行器限制到关节与传感器的连接" src="../courses/32-机器人控制器综合设计/media/controller-pipeline-dark.svg"/></p>
+<p>图 1：限幅处在控制器与执行器之间；测量滤波属于反馈环的一部分，会影响动态和相位。</p>
+<h2 id="section-2">二、把全部部件放进闭环</h2>
+<p>一个可运行的位置控制方案通常包含：</p>
+<p>目标轨迹 → 误差计算 → PID → 输出限幅 → 电机与关节 → 编码器测量 → 必要的滤波 → 回到误差计算。</p>
+<p>PID 输出可写成：</p>
+<p>$$
+\tau_{raw}=K_pe+K_i z-K_d\dot q_f
+$$</p>
+<p>$z$ 是误差积分，$\dot q_f$ 是滤波后的测量速度。微分作用写在测量速度上，可以避免目标角度阶跃直接造成微分尖峰。</p>
+<p>电机输出有限，实际命令为：</p>
+<p>$$
+\tau=\operatorname{sat}(\tau_{raw},-\tau_{max},+\tau_{max})
+$$</p>
+<p>控制器算出 12 N·m，不代表电机能输出 12 N·m。如果上限是 5 N·m，实际送入对象的只有 5 N·m。</p>
+<h2 id="section-3">三、各个部分分别负责什么？</h2>
+<table>
+<thead>
+<tr>
+<th>组成</th>
+<th>主要作用</th>
+<th>过强或设计不当的后果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P：$K_pe$</td>
+<td>误差越大，立即产生越强纠正力矩</td>
+<td>振荡、噪声放大、力矩冲击</td>
+</tr>
+<tr>
+<td>I：$K_i z$</td>
+<td>累积长期误差，补偿恒定负载</td>
+<td>饱和期间积分堆积，造成大超调</td>
+</tr>
+<tr>
+<td>D：$-K_d\dot q_f$</td>
+<td>根据速度提供阻尼</td>
+<td>速度噪声被放大</td>
+</tr>
+<tr>
+<td>低通滤波</td>
+<td>抑制部分高频测量噪声</td>
+<td>太强会让反馈变慢，消耗相位裕度</td>
+</tr>
+<tr>
+<td>输出限幅</td>
+<td>遵守电机能力</td>
+<td>饱和时控制器无法继续增加力矩</td>
+</tr>
+<tr>
+<td>Anti-Windup</td>
+<td>避免饱和期间积分朝错误方向累积</td>
+<td>回算过激会影响恢复过程</td>
+</tr>
+</tbody>
+</table>
+<p>这些模块互相影响。微分滤波可以降噪，却增加相位滞后；积分能消除稳态偏差，却要考虑执行器饱和。</p>
+<h2 id="section-4">四、带数字手算一次控制器输出</h2>
+<p>某次循环读取到：</p>
+<p>$$
+q_d=1.0\ \mathrm{rad},\quad q=0.8\ \mathrm{rad},\quad
+\dot q_f=0.1\ \mathrm{rad/s},\quad z=0.05\ \mathrm{rad\,s}
+$$</p>
+<p>选择：</p>
+<p>$$
+K_p=12,\quad K_i=2,\quad K_d=1.5
+$$</p>
+<p>位置误差为 $e=1.0-0.8=0.2$ rad，未限幅力矩为：</p>
+<p>$$
+\tau_{raw}=12(0.2)+2(0.05)-1.5(0.1)=2.35\ \mathrm{N\,m}
+$$</p>
+<p>若力矩上限为 2.0 N·m，电机只收到：</p>
+<p>$$
+\tau=2.0\ \mathrm{N\,m}
+$$</p>
+<p>这时输出饱和。若误差仍为正，积分项继续变大，会让未限幅命令离上限越来越远，之后即使位置越过目标，控制器也可能需要很久才能把积累的积分“消化掉”。</p>
+<p>条件积分的一种简单办法是：未饱和时正常积分；饱和时，如果误差会把命令推得更饱和，就暂时停止积分；如果误差能帮助命令退出饱和，则允许积分更新。</p>
+<h2 id="section-5">五、按顺序设计，而不是同时乱调</h2>
+<h3 id="section-6">第 1 步：定义性能和安全边界</h3>
+<p>先写下位置误差、超调、稳定时间、最大力矩、速度、控制周期等要求。标清哪些是不能突破的安全限制。</p>
+<h3 id="section-7">第 2 步：建立对象模型</h3>
+<p>从 $J\ddot q+b\dot q=\tau-d$ 这样的简单模型开始，记录参数来源和适用范围。负载变化会改变惯量，不能把一次辨识结果当作永远不变。</p>
+<h3 id="section-8">第 3 步：先调 P 与 D</h3>
+<p>从较小 $K_p$ 开始逐步增加，观察响应速度和振荡；再增加适量 $K_d$ 提供阻尼。先检查阶跃和慢速轨迹，不要一开始就加入很强积分。</p>
+<h3 id="section-9">第 4 步：检查开环裕度与闭环带宽</h3>
+<p>开环 Bode 图看交越频率和 PM/GM；闭环响应看跟踪速度和误差。两者回答不同问题，不要把开环交越频率直接当闭环带宽。</p>
+<h3 id="section-10">第 5 步：处理噪声和稳态偏差</h3>
+<p>根据编码器噪声设计速度估计和微分滤波；基本闭环稳定后，再加入足以消除恒定偏差的积分，并配好 Anti-Windup。</p>
+<h3 id="section-11">第 6 步：检查限幅与变化工况</h3>
+<p>至少测试力矩饱和、负载变化、传感器噪声、延迟增加、目标突变和控制器重启。</p>
+<p><img alt="机器人控制器设计按指标、模型、调参、频域检查和工况验证逐步推进" src="../courses/32-机器人控制器综合设计/media/design-checklist-dark.svg"/></p>
+<p>图 2：一项一项检查，才能知道问题来自模型、参数、噪声还是执行器限制。</p>
+<h2 id="section-12">六、交互实验：PID 组件如何共同影响响应？</h2>
+<p>演示对象为 $J\ddot q+b\dot q=\tau-d$，使用固定采样周期、PID、力矩限幅和条件积分。调节 $K_p,K_i,K_d$ 与最大力矩，观察位置响应和力矩饱和。</p>
+<div class="demo" data-demo="design" data-mode="controller"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>
+<p>可以按这个顺序观察：</p>
+<ol>
+<li>先设 $K_i=0$，逐渐提高 $K_p$，看响应变快时是否更容易振荡或触及限幅。</li>
+<li>加一点 $K_d$，观察超调和振铃是否减弱。</li>
+<li>加入 $K_i$，观察稳态误差是否缩小；再降低力矩上限，观察 Anti-Windup 对恢复过程的作用。</li>
+<li>演示只展示趋势，不能把滑块参数直接用于真实机械臂。</li>
+</ol>
+<h2 id="section-13">七、调参时每次只改变一个主要因素</h2>
+<p>同时改 $K_p,K_i,K_d$、滤波和采样周期，很难判断是哪项造成变化。建议每次都记录：</p>
+<table>
+<thead>
+<tr>
+<th>记录项</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>对象参数</td>
+<td>$J,b$ 或负载</td>
+</tr>
+<tr>
+<td>控制参数</td>
+<td>$K_p,K_i,K_d$、滤波时间常数</td>
+</tr>
+<tr>
+<td>数字实现</td>
+<td>$T_s$、计算和通信延迟</td>
+</tr>
+<tr>
+<td>执行器边界</td>
+<td>最大力矩、速度、位置范围</td>
+</tr>
+<tr>
+<td>测试轨迹</td>
+<td>阶跃、斜坡、正弦、急停</td>
+</tr>
+<tr>
+<td>结果</td>
+<td>误差、超调、稳定时间、最大力矩、裕度</td>
+</tr>
+</tbody>
+</table>
+<p>这样才能可重复地比较方案，而不是只凭“看起来更顺”。</p>
+<h2 id="section-14">八、MATLAB：离散 PID、限幅和条件积分</h2>
+<p>下面代码用固定采样周期运行 PID，在两次更新之间保持力矩。它包括力矩限幅和条件积分；为了突出控制逻辑，暂不加入传感器噪声和通信延迟。</p>
+<div class="code-panel"><div class="code-label">MATLAB</div><pre class="code-highlight"><code><span class="nb">clc</span><span class="p">;</span>
+<span class="nb">clear</span><span class="p">;</span>
+<span class="n">close</span><span class="w"> </span><span class="s">all</span><span class="p">;</span>
+
+<span class="n">J</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">1.0</span><span class="p">;</span>
+<span class="n">b</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.4</span><span class="p">;</span>
+<span class="n">Ts</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.01</span><span class="p">;</span>
+<span class="n">dt</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.001</span><span class="p">;</span>
+<span class="n">Tend</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span>
+
+<span class="n">Kp</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">12</span><span class="p">;</span>
+<span class="n">Ki</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+<span class="n">Kd</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">1.5</span><span class="p">;</span>
+<span class="n">tauMax</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">2.0</span><span class="p">;</span>
+<span class="n">tauFilter</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.02</span><span class="p">;</span>
+
+<span class="n">t</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="n">dt</span><span class="p">:</span><span class="n">Tend</span><span class="p">;</span>
+<span class="n">q</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">zeros</span><span class="p">(</span><span class="nb">size</span><span class="p">(</span><span class="n">t</span><span class="p">));</span>
+<span class="n">qd</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">1.0</span><span class="p">;</span>
+<span class="n">tau</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">zeros</span><span class="p">(</span><span class="nb">size</span><span class="p">(</span><span class="n">t</span><span class="p">));</span>
+<span class="n">qdot</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="nb">integral</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="n">qdotFiltered</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="n">qPrev</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="n">tauHeld</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="n">nextSample</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+
+<span class="k">for</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">2</span><span class="p">:</span><span class="nb">length</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">t</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">1e-12</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="p">(</span><span class="n">nextSample</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">Ts</span>
+<span class="w">        </span><span class="n">e</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">qd</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">q</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">        </span><span class="n">qdotRaw</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">(</span><span class="n">q</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="n">qPrev</span><span class="p">)</span><span class="o">/</span><span class="n">Ts</span><span class="p">;</span>
+<span class="w">        </span><span class="nb">alpha</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">exp</span><span class="p">(</span><span class="o">-</span><span class="n">Ts</span><span class="o">/</span><span class="n">tauFilter</span><span class="p">);</span>
+<span class="w">        </span><span class="n">qdotFiltered</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">alpha</span><span class="o">*</span><span class="n">qdotFiltered</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="nb">alpha</span><span class="p">)</span><span class="o">*</span><span class="n">qdotRaw</span><span class="p">;</span>
+
+<span class="w">        </span><span class="n">uCandidate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Kp</span><span class="o">*</span><span class="n">e</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Ki</span><span class="o">*</span><span class="nb">integral</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Kd</span><span class="o">*</span><span class="n">qdotFiltered</span><span class="p">;</span>
+<span class="w">        </span><span class="n">uLimited</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">min</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">uCandidate</span><span class="p">,</span><span class="o">-</span><span class="n">tauMax</span><span class="p">),</span><span class="n">tauMax</span><span class="p">);</span>
+
+<span class="w">        </span><span class="n">drivesFurtherIntoSaturation</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="k">...</span>
+<span class="w">            </span><span class="p">(</span><span class="n">uCandidate</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">tauMax</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="k">...</span>
+<span class="w">            </span><span class="p">(</span><span class="n">uCandidate</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="o">-</span><span class="n">tauMax</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">uCandidate</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">uLimited</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">~</span><span class="n">drivesFurtherIntoSaturation</span>
+<span class="w">            </span><span class="nb">integral</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">integral</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">e</span><span class="o">*</span><span class="n">Ts</span><span class="p">;</span>
+<span class="w">        </span><span class="k">end</span>
+
+<span class="w">        </span><span class="n">uCandidate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Kp</span><span class="o">*</span><span class="n">e</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Ki</span><span class="o">*</span><span class="nb">integral</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Kd</span><span class="o">*</span><span class="n">qdotFiltered</span><span class="p">;</span>
+<span class="w">        </span><span class="n">tauHeld</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">min</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">uCandidate</span><span class="p">,</span><span class="o">-</span><span class="n">tauMax</span><span class="p">),</span><span class="n">tauMax</span><span class="p">);</span>
+<span class="w">        </span><span class="n">qPrev</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">q</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">        </span><span class="n">nextSample</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">nextSample</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">qddot</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">(</span><span class="n">tauHeld</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">b</span><span class="o">*</span><span class="n">qdot</span><span class="p">)</span><span class="o">/</span><span class="n">J</span><span class="p">;</span>
+<span class="w">    </span><span class="n">qdot</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">qdot</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">qddot</span><span class="o">*</span><span class="n">dt</span><span class="p">;</span>
+<span class="w">    </span><span class="n">q</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">q</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">qdot</span><span class="o">*</span><span class="n">dt</span><span class="p">;</span>
+<span class="w">    </span><span class="n">tau</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">tauHeld</span><span class="p">;</span>
+<span class="k">end</span>
+
+<span class="nb">figure</span><span class="p">;</span>
+<span class="nb">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span>
+<span class="nb">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">q</span><span class="p">,</span><span class="s">'LineWidth'</span><span class="p">,</span><span class="mf">1.5</span><span class="p">);</span>
+<span class="n">hold</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">yline</span><span class="p">(</span><span class="n">qd</span><span class="p">,</span><span class="s">'k--'</span><span class="p">,</span><span class="s">'目标'</span><span class="p">);</span>
+<span class="nb">ylabel</span><span class="p">(</span><span class="s">'位置 q (rad)'</span><span class="p">);</span>
+<span class="n">grid</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">title</span><span class="p">(</span><span class="s">'离散 PID 位置控制仿真'</span><span class="p">);</span>
+
+<span class="nb">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">);</span>
+<span class="nb">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">tau</span><span class="p">,</span><span class="s">'LineWidth'</span><span class="p">,</span><span class="mf">1.5</span><span class="p">);</span>
+<span class="n">hold</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">yline</span><span class="p">(</span><span class="n">tauMax</span><span class="p">,</span><span class="s">'r--'</span><span class="p">);</span>
+<span class="nb">yline</span><span class="p">(</span><span class="o">-</span><span class="n">tauMax</span><span class="p">,</span><span class="s">'r--'</span><span class="p">);</span>
+<span class="nb">xlabel</span><span class="p">(</span><span class="s">'时间 (s)'</span><span class="p">);</span>
+<span class="nb">ylabel</span><span class="p">(</span><span class="s">'力矩 (N m)'</span><span class="p">);</span>
+<span class="n">grid</span><span class="w"> </span><span class="s">on</span><span class="p">;</span></code></pre></div>
+<p>请留意：</p>
+<ul>
+<li>控制器每 $T_s$ 更新一次；对象用更小的 $dt$ 在采样点之间继续运动。</li>
+<li>两拍之间保持上次力矩，这就是零阶保持。</li>
+<li>条件积分阻止饱和时积分继续把命令推向更饱和的方向。</li>
+</ul>
+<h2 id="section-15">九、仿真通过不等于实机安全</h2>
+<p>仿真只说明设定的模型和条件下表现合理。部署前还要确认：</p>
+<ul>
+<li>传感器时间戳与控制周期是否一致。</li>
+<li>角度、速度和力矩单位是否统一。</li>
+<li>输出限幅、变化率限制和急停是否有效。</li>
+<li>传感器异常、通信丢失或数值异常时如何进入安全状态。</li>
+<li>启动或重置时积分、滤波历史值如何初始化。</li>
+<li>采样抖动和真实通信延迟是否被测试覆盖。</li>
+</ul>
+<h2 id="section-16">十、本课公式卡</h2>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>公式</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>误差</td>
+<td>$e_k=q_{d,k}-q_k$</td>
+<td>目标减测量</td>
+</tr>
+<tr>
+<td>PID 未限幅输出</td>
+<td>$u_k^*=K_pe_k+K_i z_k-K_dv_k^f$</td>
+<td>D 作用于测量速度</td>
+</tr>
+<tr>
+<td>力矩限幅</td>
+<td>$u_k=\operatorname{sat}(u_k^*,-u_{max},u_{max})$</td>
+<td>遵守执行器能力</td>
+</tr>
+<tr>
+<td>离散积分</td>
+<td>$z_k=z_{k-1}+e_kT_s$</td>
+<td>采样周期必须参与</td>
+</tr>
+<tr>
+<td>一阶低通</td>
+<td>$v_k^f=\alpha v_{k-1}^f+(1-\alpha)v_k$</td>
+<td>$\alpha$ 由采样周期和滤波时间常数决定</td>
+</tr>
+<tr>
+<td>对象模型</td>
+<td>$J\ddot q+b\dot q=u-d$</td>
+<td>简化关节动力学</td>
+</tr>
+</tbody>
+</table>
+<h2 id="section-17">十一、第 32 课课后练习</h2>
+<h3 id="section-18">练习 1：手算一拍 PID</h3>
+<p>$e=0.1$ rad、$z=0.04$ rad·s、$v_f=0.2$ rad/s，$K_p=10,K_i=2,K_d=1$。求未限幅力矩；若上限为 1.2 N·m，实际输出是多少？</p>
+<h3 id="section-19">练习 2：积分与限幅</h3>
+<p>电机已达到正向力矩上限，位置误差仍为正。继续积分会有什么问题？条件积分怎样处理？</p>
+<h3 id="section-20">练习 3：解释微分滤波</h3>
+<p>为什么速度噪声会影响 D 项？滤波过强又会付出什么代价？</p>
+<h3 id="section-21">练习 4：制定测试表</h3>
+<p>给一个位置控制器列出至少 4 种测试工况，其中至少包括一种执行器受限工况和一种模型不确定工况。</p>
+<p>本课核心：<strong>可靠控制器由控制律、滤波、采样、限幅、抗饱和和工况验证共同组成，单独一组 PID 数字不能代表完整设计。</strong></p>
+</article><div class="page-footer"><a href="31-离散状态反馈与综合设计.html">← 上一课</a><a href="33-MATLAB仿真与C++控制循环.html">下一课 →</a></div></main>
+<nav class="sidebar" aria-label="课程总目录"><div class="sidebar-title">课程总目录</div><a class="nav-home" href="../index.html">首页 · 课程目录</a><div class="group-label">按学习阶段浏览</div><details class="nav-phase"><summary><span class="phase-title">阶段 0｜经典控制基础与补桥</span><small>第 1–16 课：反馈、PID、稳定性与频域设计</small></summary><details class="nav-course"><summary><span class="course-number">第 1 课</span><span class="course-title">反馈控制与第一个 PD 控制器</span></summary><div class="nav-course-links"><a class="" href="01-反馈控制.html">讲解</a><a class="" href="../reviews/01-反馈控制.html">复习</a><a class="" href="../formulas/01-反馈控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 2 课</span><span class="course-title">二阶系统、阻尼比与超调量</span></summary><div class="nav-course-links"><a class="" href="02-二阶系统.html">讲解</a><a class="" href="../reviews/02-二阶系统.html">复习</a><a class="" href="../formulas/02-二阶系统.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 3 课</span><span class="course-title">拉普拉斯变换与传递函数</span></summary><div class="nav-course-links"><a class="" href="03-传递函数.html">讲解</a><a class="" href="../reviews/03-传递函数.html">复习</a><a class="" href="../formulas/03-传递函数.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 4 课</span><span class="course-title">极点、零点与系统稳定性</span></summary><div class="nav-course-links"><a class="" href="04-极点与零点.html">讲解</a><a class="" href="../reviews/04-极点与零点.html">复习</a><a class="" href="../formulas/04-极点与零点.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 5 课</span><span class="course-title">时间响应指标与 PD 控制器参数设计</span></summary><div class="nav-course-links"><a class="" href="05-PD参数设计.html">讲解</a><a class="" href="../reviews/05-PD参数设计.html">复习</a><a class="" href="../formulas/05-PD参数设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 6 课</span><span class="course-title">积分控制、稳态误差与积分饱和</span></summary><div class="nav-course-links"><a class="" href="06-积分控制.html">讲解</a><a class="" href="../reviews/06-积分控制.html">复习</a><a class="" href="../formulas/06-积分控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 7 课</span><span class="course-title">稳态误差与终值定理</span></summary><div class="nav-course-links"><a class="" href="07-稳态误差与终值定理.html">讲解</a><a class="" href="../reviews/07-稳态误差与终值定理.html">复习</a><a class="" href="../formulas/07-稳态误差与终值定理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 8 课</span><span class="course-title">PID 参数整定与积分抗饱和</span></summary><div class="nav-course-links"><a class="" href="08-PID整定与抗饱和.html">讲解</a><a class="" href="../reviews/08-PID整定与抗饱和.html">复习</a><a class="" href="../formulas/08-PID整定与抗饱和.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 9 课</span><span class="course-title">数字 PID 实现</span></summary><div class="nav-course-links"><a class="" href="09-数字PID实现.html">讲解</a><a class="" href="../reviews/09-数字PID实现.html">复习</a><a class="" href="../formulas/09-数字PID实现.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 10 课</span><span class="course-title">Routh稳定判据</span></summary><div class="nav-course-links"><a class="" href="10-Routh稳定判据.html">讲解</a><a class="" href="../reviews/10-Routh稳定判据.html">复习</a><a class="" href="../formulas/10-Routh稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 11 课</span><span class="course-title">根轨迹与增益设计</span></summary><div class="nav-course-links"><a class="" href="11-根轨迹与增益设计.html">讲解</a><a class="" href="../reviews/11-根轨迹与增益设计.html">复习</a><a class="" href="../formulas/11-根轨迹与增益设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 12 课</span><span class="course-title">频率响应与 Bode 图</span></summary><div class="nav-course-links"><a class="" href="12-频率响应与Bode图.html">讲解</a><a class="" href="../reviews/12-频率响应与Bode图.html">复习</a><a class="" href="../formulas/12-频率响应与Bode图.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 13 课</span><span class="course-title">Nyquist 稳定判据——沿着曲线判断闭环稳定性</span></summary><div class="nav-course-links"><a class="" href="13-Nyquist稳定判据.html">讲解</a><a class="" href="../reviews/13-Nyquist稳定判据.html">复习</a><a class="" href="../formulas/13-Nyquist稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 14 课</span><span class="course-title">增益裕度与相位裕度</span></summary><div class="nav-course-links"><a class="" href="14-增益裕度与相位裕度.html">讲解</a><a class="" href="../reviews/14-增益裕度与相位裕度.html">复习</a><a class="" href="../formulas/14-增益裕度与相位裕度.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 15 课</span><span class="course-title">超前与滞后校正</span></summary><div class="nav-course-links"><a class="" href="15-超前与滞后校正.html">讲解</a><a class="" href="../reviews/15-超前与滞后校正.html">复习</a><a class="" href="../formulas/15-超前与滞后校正.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 16 课</span><span class="course-title">闭环带宽、延迟与鲁棒性</span></summary><div class="nav-course-links"><a class="" href="16-闭环带宽与延迟鲁棒性.html">讲解</a><a class="" href="../reviews/16-闭环带宽与延迟鲁棒性.html">复习</a><a class="" href="../formulas/16-闭环带宽与延迟鲁棒性.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 1｜数学与模型衔接</span><small>第 17–19 课：矩阵、特征值、传递函数与状态空间</small></summary><details class="nav-course"><summary><span class="course-number">第 17 课</span><span class="course-title">矩阵与状态向量——现代控制的数学语言</span></summary><div class="nav-course-links"><a class="" href="17-矩阵与状态向量.html">讲解</a><a class="" href="../reviews/17-矩阵与状态向量.html">复习</a><a class="" href="../formulas/17-矩阵与状态向量.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 18 课</span><span class="course-title">特征值与系统动态</span></summary><div class="nav-course-links"><a class="" href="18-特征值与系统动态.html">讲解</a><a class="" href="../reviews/18-特征值与系统动态.html">复习</a><a class="" href="../formulas/18-特征值与系统动态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 19 课</span><span class="course-title">传递函数到状态空间</span></summary><div class="nav-course-links"><a class="" href="19-传递函数到状态空间.html">讲解</a><a class="" href="../reviews/19-传递函数到状态空间.html">复习</a><a class="" href="../formulas/19-传递函数到状态空间.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 2｜现代线性控制核心</span><small>第 20–31 课：状态响应、反馈、LQR、估计与离散综合</small></summary><details class="nav-course"><summary><span class="course-number">第 20 课</span><span class="course-title">状态空间基础</span></summary><div class="nav-course-links"><a class="" href="20-状态空间基础.html">讲解</a><a class="" href="../reviews/20-状态空间基础.html">复习</a><a class="" href="../formulas/20-状态空间基础.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 21 课</span><span class="course-title">相平面与状态轨迹</span></summary><div class="nav-course-links"><a class="" href="21-相平面与状态轨迹.html">讲解</a><a class="" href="../reviews/21-相平面与状态轨迹.html">复习</a><a class="" href="../formulas/21-相平面与状态轨迹.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 22 课</span><span class="course-title">连续系统离散化</span></summary><div class="nav-course-links"><a class="" href="22-连续系统离散化.html">讲解</a><a class="" href="../reviews/22-连续系统离散化.html">复习</a><a class="" href="../formulas/22-连续系统离散化.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 23 课</span><span class="course-title">可控性与可达状态</span></summary><div class="nav-course-links"><a class="" href="23-可控性与可达状态.html">讲解</a><a class="" href="../reviews/23-可控性与可达状态.html">复习</a><a class="" href="../formulas/23-可控性与可达状态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 24 课</span><span class="course-title">线性系统的Lyapunov稳定性</span></summary><div class="nav-course-links"><a class="" href="24-线性系统的Lyapunov稳定性.html">讲解</a><a class="" href="../reviews/24-线性系统的Lyapunov稳定性.html">复习</a><a class="" href="../formulas/24-线性系统的Lyapunov稳定性.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 25 课</span><span class="course-title">状态反馈与极点配置</span></summary><div class="nav-course-links"><a class="" href="25-状态反馈与极点配置.html">讲解</a><a class="" href="../reviews/25-状态反馈与极点配置.html">复习</a><a class="" href="../formulas/25-状态反馈与极点配置.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 26 课</span><span class="course-title">LQR最优状态反馈</span></summary><div class="nav-course-links"><a class="" href="26-LQR最优状态反馈.html">讲解</a><a class="" href="../reviews/26-LQR最优状态反馈.html">复习</a><a class="" href="../formulas/26-LQR最优状态反馈.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 27 课</span><span class="course-title">状态反馈的参考跟踪</span></summary><div class="nav-course-links"><a class="" href="27-状态反馈的参考跟踪.html">讲解</a><a class="" href="../reviews/27-状态反馈的参考跟踪.html">复习</a><a class="" href="../formulas/27-状态反馈的参考跟踪.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 28 课</span><span class="course-title">可观测性与输出信息</span></summary><div class="nav-course-links"><a class="" href="28-可观测性与输出信息.html">讲解</a><a class="" href="../reviews/28-可观测性与输出信息.html">复习</a><a class="" href="../formulas/28-可观测性与输出信息.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 29 课</span><span class="course-title">Luenberger状态观测器</span></summary><div class="nav-course-links"><a class="" href="29-Luenberger状态观测器.html">讲解</a><a class="" href="../reviews/29-Luenberger状态观测器.html">复习</a><a class="" href="../formulas/29-Luenberger状态观测器.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 30 课</span><span class="course-title">观测器反馈与分离原理</span></summary><div class="nav-course-links"><a class="" href="30-观测器反馈与分离原理.html">讲解</a><a class="" href="../reviews/30-观测器反馈与分离原理.html">复习</a><a class="" href="../formulas/30-观测器反馈与分离原理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 31 课</span><span class="course-title">离散状态反馈与综合设计</span></summary><div class="nav-course-links"><a class="" href="31-离散状态反馈与综合设计.html">讲解</a><a class="" href="../reviews/31-离散状态反馈与综合设计.html">复习</a><a class="" href="../formulas/31-离散状态反馈与综合设计.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 3｜非线性控制进阶</span><small>后续计划：Lyapunov、LaSalle 与非线性控制</small></summary><div class="phase-coming">该阶段课程将在学习进度推进后加入。</div></details><details class="nav-phase" open><summary><span class="phase-title">阶段 4｜机器人与车辆实践</span><small>控制器综合设计、MATLAB 与 C++ 实现</small></summary><details class="nav-course" open><summary><span class="course-number">第 32 课</span><span class="course-title">机器人控制器综合设计</span></summary><div class="nav-course-links"><a class="active" href="32-机器人控制器综合设计.html">讲解</a><a class="" href="../reviews/32-机器人控制器综合设计.html">复习</a><a class="" href="../formulas/32-机器人控制器综合设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 33 课</span><span class="course-title">MATLAB 仿真与 C++ 控制循环</span></summary><div class="nav-course-links"><a class="" href="33-MATLAB仿真与C++控制循环.html">讲解</a><a class="" href="../reviews/33-MATLAB仿真与C++控制循环.html">复习</a><a class="" href="../formulas/33-MATLAB仿真与C++控制循环.html">公式</a></div></details></details></nav>
+</div><script data-demo-module="demo-core">
+/* 共享交互基础设施：课程页面按需加载各 demo 的普通脚本，兼容 file:// 离线打开。 */
+(function(){
+  'use strict';
+  const registry = new Map();
+  const DEG = 180/Math.PI;
+  function color(light,dark){return document.documentElement.dataset.theme==='dark'?dark:light;}
+  function poleRoots(J,Kp,Kd){
+    const d=Kd*Kd-4*J*Kp;
+    return d>=0 ? [{re:(-Kd+Math.sqrt(d))/(2*J),im:0},{re:(-Kd-Math.sqrt(d))/(2*J),im:0}]
+      : [{re:-Kd/(2*J),im:Math.sqrt(-d)/(2*J)},{re:-Kd/(2*J),im:-Math.sqrt(-d)/(2*J)}];
+  }
+  function solve(J,Kp,Kd){
+    let q=0,v=0,t=0;const dt=.008,out=[],qr=Math.PI/2;
+    const rhs=(a,b)=>[b,(Kp*(qr-a)-Kd*b)/J];
+    for(let i=0;i<=750;i++){
+      out.push([t,q*DEG]);
+      const a=rhs(q,v),b=rhs(q+dt*a[0]/2,v+dt*a[1]/2),c=rhs(q+dt*b[0]/2,v+dt*b[1]/2),d=rhs(q+dt*c[0],v+dt*c[1]);
+      q+=dt*(a[0]+2*b[0]+2*c[0]+d[0])/6;
+      v+=dt*(a[1]+2*b[1]+2*c[1]+d[1])/6;t+=dt;
+    }
+    return out;
+  }
+  function canvasReady(canvas){
+    const w=Math.max(canvas.clientWidth,260),h=canvas.clientHeight||245,dpr=window.devicePixelRatio||1;
+    canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+    const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return {ctx,w,h};
+  }
+  function mountPD(node, options){
+    const J0=Number(node.dataset.j||1),Kp0=Number(node.dataset.kp||16),Kd0=Number(node.dataset.kd??8);
+    node.innerHTML=`<p class="demo-title">${options.title}</p><p class="demo-note">理想单关节模型，目标 90°、初始角度及速度为零；本地浏览器计算。</p>
+      <div class="demo-controls">
+      <div class="control"><label>J（kg·m²）<output data-out="j"></output></label><input data-param="j" type="range" min="0.5" max="5" step="0.5"></div>
+      <div class="control"><label>Kp（N·m/rad）<output data-out="kp"></output></label><input data-param="kp" type="range" min="2" max="36" step="2"></div>
+      <div class="control"><label>Kd（N·m·s/rad）<output data-out="kd"></output></label><input data-param="kd" type="range" min="0" max="24" step="1"></div>
+      </div><canvas class="demo-canvas" role="img" aria-label="互动数学模型的曲线"></canvas>
+      <div class="demo-meta" aria-live="polite"></div><div class="demo-caption">${options.caption}</div>`;
+    const inputs={};node.querySelectorAll('input').forEach(el=>inputs[el.dataset.param]=el);
+    inputs.j.value=String(J0);inputs.kp.value=String(Kp0);inputs.kd.value=String(Kd0);
+    const canvas=node.querySelector('canvas'),meta=node.querySelector('.demo-meta');
+    function draw(){
+      const J=+inputs.j.value,Kp=+inputs.kp.value,Kd=+inputs.kd.value;
+      for(const name of ['j','kp','kd'])node.querySelector('[data-out="'+name+'"]').textContent=inputs[name].value;
+      const z=Kd/(2*Math.sqrt(J*Kp)),wn=Math.sqrt(Kp/J);
+      const details=options.render(canvas,J,Kp,Kd);
+      meta.replaceChildren();
+      for(const str of [`阻尼比 ζ = ${z.toFixed(3)}`,`ωn = ${wn.toFixed(3)} rad/s`,...details]){
+        const s=document.createElement('span');s.textContent=str;meta.appendChild(s);
+      }
+    }
+    Object.values(inputs).forEach(el=>el.addEventListener('input',draw));
+    window.addEventListener('robot-theme-changed',draw);
+    if(typeof ResizeObserver!=='undefined')new ResizeObserver(draw).observe(canvas);
+    else window.addEventListener('resize',draw);
+    draw();
+  }
+  window.NoteDemos={register(name,mount){
+    if(registry.has(name))throw new Error('重复的演示名称：'+name);
+    registry.set(name,mount);
+  }, utils:{color,poleRoots,solve,canvasReady,mountPD}};
+  function boot(){
+    document.querySelectorAll('.demo[data-demo]').forEach(node=>{
+      const name=node.dataset.demo;
+      try{
+        if(!registry.has(name))throw new Error(`模块「${name}」没有注册`);
+        registry.get(name)(node,window.NoteDemos.utils);
+      }catch(err){
+        node.textContent=`演示加载失败（${name}）：${err.message}。正文和公式仍可阅读。`;
+        node.classList.add('demo-error');console.error(err);
+      }
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+
+</script>
+<script data-demo-module="design">
+(function(){
+'use strict';
+window.NoteDemos.register('design',function(node,u){
+node.classList.add('controller-lab');
+node.innerHTML='<p class="demo-title">综合设计实验 · 离散 PID、力矩限幅与条件积分</p>'+
+'<p class="demo-note">教学对象 J qddot + b qdot = τ − d。1 rad 阶跃目标，负载扰动在 2.5 s 加入。这里只用于看参数影响，不代表实机调参。</p>'+
+'<div class="demo-controls">'+
+'<div class="control"><label>Kp <output data-o="kp"></output></label><input data-p="kp" aria-label="比例增益 Kp" type="range" min="2" max="30" step="0.5" value="12"></div>'+
+'<div class="control"><label>Ki <output data-o="ki"></output></label><input data-p="ki" aria-label="积分增益 Ki" type="range" min="0" max="8" step="0.2" value="2"></div>'+
+'<div class="control"><label>Kd <output data-o="kd"></output></label><input data-p="kd" aria-label="微分增益 Kd" type="range" min="0" max="6" step="0.1" value="1.5"></div>'+
+'<div class="control"><label>最大力矩 <output data-o="limit"></output></label><input data-p="limit" aria-label="最大力矩限制" type="range" min="1" max="8" step="0.1" value="2"></div></div>'+
+'<canvas class="demo-canvas" data-plot="position" role="img" aria-label="目标角度和实际关节角度的阶跃响应"></canvas>'+
+'<canvas class="demo-canvas" data-plot="torque" role="img" aria-label="控制力矩与电机力矩限制"></canvas>'+
+'<div class="demo-meta" aria-live="polite"></div><p class="demo-caption" data-status></p>';
+const c={};node.querySelectorAll('input').forEach(function(x){c[x.dataset.p]=x;});
+const cv=[node.querySelector('[data-plot="position"]'),node.querySelector('[data-plot="torque"]')];
+function chart(canvas,title,ymin,ymax,ticks){
+const q=u.canvasReady(canvas),ctx=q.ctx,w=q.w,h=q.h;ctx.clearRect(0,0,w,h);
+const ink=u.color('#344050','#dbe5ef'),grid=u.color('#e3e8ed','#3b4758'),r={x:52,y:34,w:w-70,h:h-72};
+const X=function(t){return r.x+t/5*r.w;},Y=function(v){return r.y+r.h-(v-ymin)/(ymax-ymin)*r.h;};
+ctx.font='11px sans-serif';ctx.fillStyle=ink;ctx.textAlign='left';ctx.fillText(title,10,19);ctx.strokeStyle=grid;ctx.lineWidth=1;
+ticks.forEach(function(v){const py=Y(v);ctx.beginPath();ctx.moveTo(r.x,py);ctx.lineTo(r.x+r.w,py);ctx.stroke();ctx.fillStyle=ink;ctx.textAlign='right';ctx.fillText(v.toFixed(1),r.x-6,py+4);});
+[0,1,2,3,4,5].forEach(function(t){const px=X(t);ctx.beginPath();ctx.moveTo(px,r.y);ctx.lineTo(px,r.y+r.h);ctx.stroke();ctx.fillStyle=ink;ctx.textAlign='center';ctx.fillText(String(t),px,r.y+r.h+16);});
+ctx.textAlign='center';ctx.fillStyle=ink;ctx.fillText('时间 (s)',r.x+r.w/2,h-4);
+function line(data,color,dash){
+ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.setLineDash(dash||[]);ctx.beginPath();
+data.forEach(function(p,i){if(i===0)ctx.moveTo(X(p[0]),Y(p[1]));else ctx.lineTo(X(p[0]),Y(p[1]));});ctx.stroke();ctx.restore();
+}
+function horizontal(value,color,dash){ctx.save();ctx.strokeStyle=color;ctx.setLineDash(dash||[]);ctx.beginPath();ctx.moveTo(r.x,Y(value));ctx.lineTo(r.x+r.w,Y(value));ctx.stroke();ctx.restore();}
+return {line:line,horizontal:horizontal};
+}
+function draw(){
+const kp=+c.kp.value,ki=+c.ki.value,kd=+c.kd.value,limit=+c.limit.value;
+node.querySelector('[data-o="kp"]').textContent=kp.toFixed(1);
+node.querySelector('[data-o="ki"]').textContent=ki.toFixed(1);
+node.querySelector('[data-o="kd"]').textContent=kd.toFixed(1);
+node.querySelector('[data-o="limit"]').textContent=limit.toFixed(1)+' N·m';
+const J=1,b=.4,Ts=.01,dt=.002,total=5,target=1,tauF=.02;
+let q=0,v=0,I=0,vf=0,qPrev=0,uHeld=0,nextSample=0,satCount=0,sampleCount=0;
+const pos=[],tor=[];
+for(let t=0;t<=total+1e-9;t+=dt){
+if(t+1e-9>=nextSample){
+const e=target-q,rawV=(q-qPrev)/Ts,alpha=Math.exp(-Ts/tauF);
+vf=alpha*vf+(1-alpha)*rawV;
+let raw=kp*e+ki*I-kd*vf;
+const clamped=Math.max(-limit,Math.min(limit,raw));
+const saturated=raw!==clamped;
+const pushes=(raw>limit&&e>0)||(raw< -limit&&e<0);
+if(!saturated||!pushes)I+=e*Ts;
+raw=kp*e+ki*I-kd*vf;
+uHeld=Math.max(-limit,Math.min(limit,raw));
+if(saturated) satCount++;
+sampleCount++;
+qPrev=q;nextSample+=Ts;
+}
+pos.push([t,q]);tor.push([t,uHeld]);
+const disturbance=t>=2.5?.3:0;
+const acc=(uHeld-b*v-disturbance)/J;
+v+=acc*dt;q+=v*dt;
+}
+const maxq=Math.max(1.15,...pos.map(function(p){return p[1];}));
+const pc=chart(cv[0],'位置响应 · 目标与实际角度',-0.1,maxq,[0,.25,.5,.75,1,1.25]);
+pc.line(pos,'#3889cf');pc.horizontal(target,'#d88b2b',[5,4]);
+const tc=chart(cv[1],'控制力矩 · 含限幅',-limit*1.3,limit*1.3,[-limit,0,limit]);
+tc.line(tor,'#409e76');tc.horizontal(limit,'#d88b2b',[4,4]);tc.horizontal(-limit,'#d88b2b',[4,4]);
+const overshoot=Math.max(0,...pos.map(function(p){return p[1]-target;}));
+const finalError=target-pos[pos.length-1][1];
+const meta=node.querySelector('.demo-meta');meta.replaceChildren();
+['最终误差 '+finalError.toFixed(3)+' rad','最大超调 '+(overshoot*100).toFixed(1)+'%','力矩饱和采样 '+(100*satCount/sampleCount).toFixed(1)+'%','扰动：t=2.5 s 后增加 0.3 N·m'].forEach(function(s){const x=document.createElement('span');x.textContent=s;meta.appendChild(x);});
+node.querySelector('[data-status]').textContent=satCount>sampleCount*.1?
+'这组参数有较多采样点处于力矩饱和。检查限幅期间积分是否累积，以及执行器能力是否满足目标。':
+'观察提高 Kp、加入 Kd 或 Ki 后的位置与力矩变化；每次只改一项，才能看清它的作用。';
+}
+Object.keys(c).forEach(function(k){c[k].addEventListener('input',draw);});
+window.addEventListener('robot-theme-changed',draw);if(typeof ResizeObserver!=='undefined')new ResizeObserver(draw).observe(node);else window.addEventListener('resize',draw);draw();
+});
+})();
+
+</script></body></html>

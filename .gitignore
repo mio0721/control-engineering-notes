@@ -1,0 +1,15 @@
+# Python temporary and environment files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+# Local OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+# Local credentials
+.env
+.env.*
+!.env.example
+# Generated HTML is intentionally tracked: GitHub Pages serves these files.

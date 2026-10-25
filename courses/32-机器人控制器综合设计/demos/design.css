@@ -1,0 +1,7 @@
+.controller-lab .demo-controls{grid-template-columns:repeat(4,minmax(0,1fr))}
+.controller-lab canvas{height:235px;margin:10px 0;background:var(--paper)}
+.controller-lab .demo-meta{font-variant-numeric:tabular-nums}
+@media(max-width:720px){.controller-lab .demo-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:440px){.controller-lab .demo-controls{grid-template-columns:1fr}}
+
+.prose img[src$="state-space-dark.svg"],.prose img[src$="controller-pipeline-dark.svg"],.prose img[src$="design-checklist-dark.svg"],.prose img[src$="sample-hold-dark.svg"],.prose img[src$="control-loop-dark.svg"]{display:block;width:100%;height:auto;max-width:880px;margin:18px auto;border-radius:5px}

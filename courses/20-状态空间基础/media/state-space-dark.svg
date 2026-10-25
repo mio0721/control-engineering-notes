@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 250" role="img" aria-labelledby="t d">
+<title id="t">二阶关节模型的状态空间表示</title><desc id="d">位置状态 x1 等于角度 q，其变化率是速度 x2；速度状态 x2 的变化率由刚度、阻尼、惯量和输入力矩决定。测量输出可以取位置。</desc>
+<rect width="820" height="250" fill="#111a24"/>
+<g fill="none" stroke="#d9e5ee" stroke-width="2">
+<rect x="35" y="74" width="180" height="92" rx="10" fill="#1b2b39"/>
+<rect x="320" y="50" width="210" height="92" rx="10" fill="#1b2b39"/>
+<rect x="320" y="158" width="330" height="70" rx="10" fill="#1b2b39"/>
+<path d="M215 120H300" marker-end="url(#a)"/><path d="M250 120V194H300" marker-end="url(#a)"/>
+<path d="M530 96H710" marker-end="url(#a)"/>
+</g>
+<defs><marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0L9 4.5 0 9z" fill="#d9e5ee"/></marker></defs>
+<g fill="#f0f5f8" font-family="Arial,sans-serif" text-anchor="middle">
+<text x="125" y="105" font-size="19">状态向量 x</text><text x="125" y="136" font-size="17">[位置 q, 速度 qdot]</text>
+<text x="425" y="84" font-size="19">状态 1：x1 = q</text><text x="425" y="116" font-size="17">变化率：x1 点 = x2</text>
+<text x="485" y="187" font-size="18">状态 2：x2 = qdot</text><text x="485" y="214" font-size="15">变化率由 -kq/J - b qdot/J + tau/J 决定</text>
+<text x="748" y="101" font-size="18" fill="#72c9e8">输出 y = q</text>
+<text x="255" y="107" font-size="14" fill="#a9bbc9">分解</text>
+<text x="410" y="240" font-size="14" fill="#72c9e8">状态方程把一个二阶运动写成两个相连的一阶变化</text>
+</g></svg>

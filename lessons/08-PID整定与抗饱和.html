@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
+<title>第 8 课 · PID 参数整定与积分抗饱和 · 课程讲解｜机器人控制理论笔记</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('robot-note-theme')||'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
+<link rel="stylesheet" href="../assets/style.css">
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true,packages:{'[+]':['base','ams']}},svg:{fontCache:'local'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
+<script defer src="../assets/mathjax-tex-svg.js"></script><script defer src="../assets/theme.js"></script>
+</head><body>
+<header class="mast"><div class="mast-inner"><a class="brand" href="../index.html">机器人控制理论笔记 <small>持续更新 · 离线 HTML</small></a><div class="top-actions"><span class="top-indicator">已整理 33 课</span><button id="themeToggle" type="button" class="theme-toggle" aria-label="切换日间与夜间模式" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">夜间模式</span></button></div></div></header>
+<div class="layout">
+<aside class="toc" aria-label="本章目录"><div class="toc-label">本章目录</div><a class="h2" href="#section-1">本课要回答的问题</a><a class="h2" href="#section-2">1. 三个 PID 参数，三种作用</a><a class="h2" href="#section-3">2. 理想模型的稳定条件从哪里来</a><a class="h3" href="#section-4">数值例子</a><a class="h2" href="#section-5">3. 电机饱和：命令不等于实际输出</a><a class="h2" href="#section-6">4. 条件积分：饱和时先看误差方向</a><a class="h2" href="#section-7">5. 条件积分的程序逻辑</a><a class="h2" href="#section-8">6. 反算抗饱和：让积分知道电机做不到</a><a class="h2" href="#section-9">7. 只减小 $K_i$ 为什么不够</a><a class="h2" href="#section-10">饱和时什么时候该暂停积分，什么时候应该继续？</a><a class="h3" href="#section-11">先预测，再展开核对</a><a class="h2" href="#section-12">8. MATLAB：观察条件积分</a><a class="h2" href="#section-13">9. 练习与已知批改</a><a class="h2" href="#section-14">本课小结</a><a class="h2" href="#section-15">课程衔接与条件检查</a><a class="h3" href="#section-16">用模型给调参增加一道依据</a></aside>
+<main class="main" id="content"><div class="eyebrow">第 8 课 / 课程讲解</div><div class="chapter-tabs"><a class="active" href="08-PID整定与抗饱和.html">课程讲解</a><a class="" href="../reviews/08-PID整定与抗饱和.html">复习笔记</a><a class="" href="../formulas/08-PID整定与抗饱和.html">公式手册</a></div><article class="prose"><h1>第 8 课：PID 参数整定与积分抗饱和</h1>
+<blockquote>
+<p><strong>内容来源说明</strong>：本课按课程交接和可找回的练习批改记录重建；原始讲解未完整保留，以下为扩写后的教学版本。</p>
+</blockquote>
+<h2 id="section-1">本课要回答的问题</h2>
+<p>第 6 课学到积分能消静差，也学到它可能积累过多。本课继续研究：</p>
+<ol>
+<li>积分增益 $K_i$ 能否一直调大？</li>
+<li>控制器命令超过电机上限时，积分器要不要继续工作？</li>
+<li>为什么“只要饱和就冻结积分”有时会让系统更难退出饱和？</li>
+</ol>
+<h2 id="section-2">1. 三个 PID 参数，三种作用</h2>
+<p>对于关节位置控制，误差为 $e=q_d-q$，一个常见控制律为：</p>
+<p>$$
+\tau=K_pe+K_i z-K_d\dot q,\qquad \dot z=e
+$$</p>
+<ul>
+<li><strong>比例 $K_p$</strong>：差得越多，拉回去的力越大。太小会反应慢、抗扰弱；太大可能过冲、振荡，且命令更容易超过电机上限。</li>
+<li><strong>微分 $K_d$</strong>：关节速度越大，制动力越强，像减震器。太小压不住振荡；太大可能使控制钝化，也会让速度噪声更多地进入力矩。</li>
+<li><strong>积分 $K_i$</strong>：误差持续存在时，额外保持力矩逐渐增加。太小，静差消得慢；太大，积分状态变化快，可能导致过冲或不稳定。</li>
+</ul>
+<p>所以“所有参数都尽可能大”不是整定方法。通常先让 P 项能推动系统靠近目标，再用 D 项控制振荡，最后只加足够补偿持续误差的 I 项，并检查执行器限幅。</p>
+<h2 id="section-3">2. 理想模型的稳定条件从哪里来</h2>
+<p>用惯量模型 $J\ddot q=\tau$，固定目标，研究目标附近的小偏差。令目标为零，控制律为：</p>
+<p>$$
+\tau=-K_pq-K_i\int q\,dt-K_d\dot q
+$$</p>
+<p>代入 $J\ddot q=\tau$，再把积分写成拉普拉斯形式 $1/s$：</p>
+<p>$$
+Js^2q=-\left(K_p+\frac{K_i}{s}+K_ds\right)q
+$$</p>
+<p>两边乘以 $s$，整理出特征多项式：</p>
+<p>$$
+Js^3+K_ds^2+K_ps+K_i=0
+$$</p>
+<p>特征方程的根就是闭环极点。直观地说，极点决定系统自由响应中的指数衰减、振荡或增长：极点在左半平面时响应衰减；若有极点进入右半平面，误差会增长。</p>
+<p>这里先使用一个三阶稳定性结果，理解“积分不能无限增大”。<strong>Routh 表的构造方法在第 10 课完整学习，本课不要求提前掌握其算法。</strong> 表格作为后续推导的预览：</p>
+<table>
+<thead>
+<tr>
+<th>幂次</th>
+<th style="text-align:right">第一列</th>
+<th style="text-align:right">第二列</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$s^3$</td>
+<td style="text-align:right">$J$</td>
+<td style="text-align:right">$K_p$</td>
+</tr>
+<tr>
+<td>$s^2$</td>
+<td style="text-align:right">$K_d$</td>
+<td style="text-align:right">$K_i$</td>
+</tr>
+<tr>
+<td>$s^1$</td>
+<td style="text-align:right">$(K_dK_p-JK_i)/K_d$</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td>$s^0$</td>
+<td style="text-align:right">$K_i$</td>
+<td style="text-align:right"></td>
+</tr>
+</tbody>
+</table>
+<p>在 $J,K_p,K_d,K_i$ 都为正时，第一列还必须满足：</p>
+<p>$$
+K_dK_p-JK_i&gt;0
+\quad\Longrightarrow\quad
+\boxed{K_dK_p&gt;JK_i}
+$$</p>
+<p>这条不等式说明：$K_i$ 不能无限增大。积分项多引入了一个动态状态，过强时会压过系统已有的阻尼。</p>
+<h3 id="section-4">数值例子</h3>
+<p>$J=2$、$K_p=12$、$K_d=4$ 时：</p>
+<p>$$
+4\times12&gt;2K_i
+\quad\Longrightarrow\quad
+0&lt;K_i&lt;24
+$$</p>
+<p>所以 $K_i=4$ 和 $K_i=12$ 满足此理想模型的条件，$K_i=30$ 不满足。</p>
+<p><strong>重要边界</strong>：这是没有执行器饱和、延迟、滤波和结构柔性的理想模型检查。满足条件不等于响应一定好看；不满足则说明该简化模型不能保证稳定。真实机器人仍需仿真、限幅分析和测试。</p>
+<h2 id="section-5">3. 电机饱和：命令不等于实际输出</h2>
+<p>控制器算出的力矩是 $\tau_{cmd}$。电机有最大力矩 $\tau_{max}$，实际输出只能是：</p>
+<p>$$
+\tau_{sat}=\operatorname{clip}(\tau_{cmd},-\tau_{max},\tau_{max})
+$$</p>
+<p>若控制器要求 $8$ N·m，但电机上限是 $5$ N·m，关节实际受到的只有 $5$ N·m。多出来的 $3$ N·m 只存在于控制器计算中。</p>
+<p>若积分器仍根据误差增加，控制器内部会觉得“还差得很多”，积分越记越大。等关节终于快到目标时，这些电机从未真正输出过的额外力矩仍藏在积分状态中。这就是第 6 课 windup 的来源。</p>
+<h2 id="section-6">4. 条件积分：饱和时先看误差方向</h2>
+<p>条件积分的规则是：</p>
+<blockquote>
+<p>若误差会把控制命令推得更深地进入饱和，就暂停积分；若误差帮助命令退出饱和，就允许积分。</p>
+</blockquote>
+<p>假设正误差产生正向积分力矩：</p>
+<table>
+<thead>
+<tr>
+<th>当前状态</th>
+<th>误差</th>
+<th>积分变化的效果</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>正向饱和：$\tau_{cmd}&gt;\tau_{max}$</td>
+<td>$e&gt;0$</td>
+<td>继续增加正命令，让饱和更严重</td>
+<td>暂停</td>
+</tr>
+<tr>
+<td>正向饱和：$\tau_{cmd}&gt;\tau_{max}$</td>
+<td>$e&lt;0$</td>
+<td>减小旧的正积分，帮助退出正向饱和</td>
+<td>允许</td>
+</tr>
+<tr>
+<td>负向饱和：$\tau_{cmd}&lt;-\tau_{max}$</td>
+<td>$e&lt;0$</td>
+<td>继续增加负命令，让饱和更严重</td>
+<td>暂停</td>
+</tr>
+<tr>
+<td>负向饱和：$\tau_{cmd}&lt;-\tau_{max}$</td>
+<td>$e&gt;0$</td>
+<td>积分往正方向变化，帮助退出负向饱和</td>
+<td>允许</td>
+</tr>
+</tbody>
+</table>
+<p>因此，正向饱和时如果 $e&lt;0$，虽然电机仍被卡在正向上限，但误差已经要求往回收；让积分继续变化正好能减小旧的正积分。不能见到“输出饱和”就一律停止积分。</p>
+<p>判定要看误差 $e$ 和饱和方向，不能只看误差变化率 $\dot e$。$e$ 表示误差当前在哪边；$\dot e$ 只表示它正在增大还是减小，二者不是一回事。</p>
+<h2 id="section-7">5. 条件积分的程序逻辑</h2>
+<p>下面是一个简化的 C++ 风格示意：</p>
+<div class="code-panel"><div class="code-label">CPP</div><pre class="code-highlight"><code><span class="kt">double</span><span class="w"> </span><span class="n">tau_cmd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kp</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">ki</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">integral</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">kd</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">velocity</span><span class="p">;</span>
+<span class="kt">double</span><span class="w"> </span><span class="n">tau_sat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">clamp</span><span class="p">(</span><span class="n">tau_cmd</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">tau_max</span><span class="p">,</span><span class="w"> </span><span class="n">tau_max</span><span class="p">);</span>
+
+<span class="kt">bool</span><span class="w"> </span><span class="n">drives_further_into_saturation</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="p">(</span><span class="n">tau_cmd</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">tau_max</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0</span><span class="p">)</span><span class="w"> </span><span class="o">||</span>
+<span class="w">    </span><span class="p">(</span><span class="n">tau_cmd</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="o">-</span><span class="n">tau_max</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.0</span><span class="p">);</span>
+
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">drives_further_into_saturation</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">integral</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">dt</span><span class="p">;</span>
+<span class="p">}</span></code></pre></div>
+<p>程序先算未限幅命令，再算实际可输出命令，然后判断误差是不是正在加深饱和。代码还需处理角度环绕、积分限幅、$K_i=0$、采样时间和执行器故障；这段只展示核心符号逻辑。</p>
+<h2 id="section-8">6. 反算抗饱和：让积分知道电机做不到</h2>
+<p>反算方法不只是暂停积分，而是把电机实际输出与控制器原命令的差反馈给积分器：</p>
+<p>$$
+\dot z=e+\frac{K_{aw}}{K_i}(\tau_{sat}-\tau_{cmd})
+$$</p>
+<p>没有饱和时，$\tau_{sat}=\tau_{cmd}$，补偿项为零，积分正常累计。</p>
+<p>若控制器命令 $8$ N·m、电机只输出 $5$ N·m，则差值为负，会把过大的正积分往回拉。$K_{aw}$ 决定回拉速度：太小，积分释放慢；太大，积分修正过猛，可能引入抖动。</p>
+<p>等价地，也可以直接更新积分力矩 $\tau_I=K_i z$：</p>
+<p>$$
+\dot\tau_I=K_i e+K_{aw}(\tau_{sat}-\tau_{cmd})
+$$</p>
+<h2 id="section-9">7. 只减小 $K_i$ 为什么不够</h2>
+<p>降低 $K_i$ 通常会减慢新积分变成力矩的速度，所以可能缓和超调。但它不一定清除已经累计的积分状态；如果把 $K_i$ 降得太小，持续扰动下的静差又会消除得很慢。</p>
+<p>因此，降低 $K_i$ 是调参手段，条件积分和反算才是在处理“执行器输出受限、内部积分仍继续记账”的机制。是否采用哪种方法，要结合力矩上限和实测曲线。</p>
+<h2 id="section-10">饱和时什么时候该暂停积分，什么时候应该继续？</h2>
+<p>假设力矩上限为 5 N·m，当前位置误差为正，控制器期望力矩却达到 10 N·m。实际只能执行 5；若继续增加正积分，会让期望与实际差得更远。</p>
+<p>$$
+\tau_{raw}=K_pe+K_iz-K_d\dot q,\qquad
+\tau_{act}=\operatorname{clip}(\tau_{raw},-5,5).
+$$</p>
+<p>条件积分要判断“误差会不会加深当前饱和”：</p>
+<p>$$
+\begin{aligned}
+\tau_{raw}&gt;5\ \text{且}\ e&gt;0&amp;:\ \text{暂停积分},\\
+\tau_{raw}&gt;5\ \text{且}\ e&lt;0&amp;:\ \text{允许积分回落}.
+\end{aligned}
+$$</p>
+<p>例如正饱和时 e=−0.2、采样周期0.01 s，若允许积分，z 每步减少0.002 rad·s；这正帮助退出正饱和。若一见饱和就冻结，反而会把已经过大的积分保留住。负饱和时按同样逻辑反向判断。</p>
+<p>图中比较同样增益、同样力矩限制，仅积分策略不同的响应。两者都遵守同一执行器上限，差异来自积分内部状态，不能把抗饱和误解为“允许电机输出更大力矩”。</p>
+<p><img alt="本课数值例子的定量对照图" src="../courses/08-PID整定与抗饱和/media/worked-example-dark.svg"/></p>
+<p><strong>读图与操作</strong>：固定力矩上限，比较普通积分和条件积分；再调低上限。观察超调和恢复，不把某个参数下的改善当成普遍保证。</p>
+<p><strong>使用条件</strong>：条件积分逻辑假定 Ki&gt;0、积分状态 z=∫e；若积分状态定义变了，须重新检查符号。</p>
+<div class="demo" data-demo="design"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>
+<h3 id="section-11">先预测，再展开核对</h3>
+<p>若 τraw=−8、下限−5，此时误差为正，应暂停还是继续积分？</p>
+<details><summary>查看思路与答案</summary>
+<p>应允许积分增大，帮助原本过负的命令回到可实现范围；若误差为负才会加深负饱和。</p>
+</details>
+<h2 id="section-12">8. MATLAB：观察条件积分</h2>
+<p>下面用离散步进比较普通积分与条件积分，设置一个力矩上限。它只展示 anti-windup 的核心，不含电机电流环、延迟和噪声。</p>
+<div class="code-panel"><div class="code-label">MATLAB</div><pre class="code-highlight"><code><span class="n">J</span><span class="p">=</span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="n">Kp</span><span class="p">=</span><span class="mi">10</span><span class="p">;</span><span class="w"> </span><span class="n">Kd</span><span class="p">=</span><span class="mi">3</span><span class="p">;</span><span class="w"> </span><span class="n">Ki</span><span class="p">=</span><span class="mi">16</span><span class="p">;</span>
+<span class="n">tauMax</span><span class="p">=</span><span class="mi">5</span><span class="p">;</span><span class="w"> </span><span class="n">qd</span><span class="p">=</span><span class="mf">1.5</span><span class="p">;</span><span class="w"> </span><span class="n">dt</span><span class="p">=</span><span class="mf">0.001</span><span class="p">;</span><span class="w"> </span><span class="n">T</span><span class="p">=</span><span class="mi">5</span><span class="p">;</span>
+<span class="n">N</span><span class="p">=</span><span class="nb">round</span><span class="p">(</span><span class="n">T</span><span class="o">/</span><span class="n">dt</span><span class="p">);</span><span class="w"> </span><span class="n">t</span><span class="p">=(</span><span class="mi">0</span><span class="p">:</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">'*</span><span class="n">dt</span><span class="p">;</span>
+<span class="n">q</span><span class="p">=</span><span class="nb">zeros</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="mi">2</span><span class="p">);</span><span class="w"> </span><span class="n">v</span><span class="p">=</span><span class="nb">zeros</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="mi">2</span><span class="p">);</span><span class="w"> </span><span class="n">z</span><span class="p">=</span><span class="nb">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">);</span>
+
+<span class="k">for</span><span class="w"> </span><span class="n">k</span><span class="p">=</span><span class="mi">1</span><span class="p">:</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="nb">mode</span><span class="p">=</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span>
+<span class="w">        </span><span class="n">e</span><span class="p">=</span><span class="n">qd</span><span class="o">-</span><span class="n">q</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="nb">mode</span><span class="p">);</span>
+<span class="w">        </span><span class="n">tauCmd</span><span class="p">=</span><span class="n">Kp</span><span class="o">*</span><span class="n">e</span><span class="o">+</span><span class="n">Ki</span><span class="o">*</span><span class="n">z</span><span class="p">(</span><span class="nb">mode</span><span class="p">)</span><span class="o">-</span><span class="n">Kd</span><span class="o">*</span><span class="n">v</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="nb">mode</span><span class="p">);</span>
+<span class="w">        </span><span class="n">tau</span><span class="p">=</span><span class="nb">min</span><span class="p">(</span><span class="n">tauMax</span><span class="p">,</span><span class="nb">max</span><span class="p">(</span><span class="o">-</span><span class="n">tauMax</span><span class="p">,</span><span class="n">tauCmd</span><span class="p">));</span>
+<span class="w">        </span><span class="n">deepen</span><span class="p">=(</span><span class="n">tauCmd</span><span class="o">&gt;</span><span class="n">tauMax</span><span class="o">&amp;&amp;</span><span class="n">e</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)</span><span class="o">||</span><span class="p">(</span><span class="n">tauCmd</span><span class="o">&lt;</span><span class="w"> </span><span class="o">-</span><span class="n">tauMax</span><span class="o">&amp;&amp;</span><span class="n">e</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">);</span>
+<span class="w">        </span><span class="n">q</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="nb">mode</span><span class="p">)=</span><span class="n">q</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="nb">mode</span><span class="p">)</span><span class="o">+</span><span class="n">v</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="nb">mode</span><span class="p">)</span><span class="o">*</span><span class="n">dt</span><span class="p">;</span>
+<span class="w">        </span><span class="n">v</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="nb">mode</span><span class="p">)=</span><span class="n">v</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="nb">mode</span><span class="p">)</span><span class="o">+</span><span class="n">tau</span><span class="o">/</span><span class="n">J</span><span class="o">*</span><span class="n">dt</span><span class="p">;</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="nb">mode</span><span class="o">==</span><span class="mi">1</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">~</span><span class="n">deepen</span>
+<span class="w">            </span><span class="n">z</span><span class="p">(</span><span class="nb">mode</span><span class="p">)=</span><span class="n">z</span><span class="p">(</span><span class="nb">mode</span><span class="p">)</span><span class="o">+</span><span class="n">e</span><span class="o">*</span><span class="n">dt</span><span class="p">;</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="k">end</span>
+
+<span class="nb">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">q</span><span class="p">(:,</span><span class="mi">1</span><span class="p">),</span><span class="s">'LineWidth'</span><span class="p">,</span><span class="mf">1.3</span><span class="p">);</span><span class="w"> </span><span class="n">hold</span><span class="w"> </span><span class="s">on</span>
+<span class="nb">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">q</span><span class="p">(:,</span><span class="mi">2</span><span class="p">),</span><span class="s">'LineWidth'</span><span class="p">,</span><span class="mf">1.3</span><span class="p">);</span><span class="w"> </span><span class="nb">yline</span><span class="p">(</span><span class="n">qd</span><span class="p">,</span><span class="s">'--'</span><span class="p">);</span><span class="w"> </span><span class="n">grid</span><span class="w"> </span><span class="s">on</span>
+<span class="nb">legend</span><span class="p">(</span><span class="s">'普通积分'</span><span class="p">,</span><span class="s">'条件积分'</span><span class="p">,</span><span class="s">'目标'</span><span class="p">);</span>
+<span class="nb">xlabel</span><span class="p">(</span><span class="s">'时间 (s)'</span><span class="p">);</span><span class="w"> </span><span class="nb">ylabel</span><span class="p">(</span><span class="s">'角度 (rad)'</span><span class="p">);</span></code></pre></div>
+<p>观察两条曲线接近目标后是否越过得很多，并同时记录 $z$。只看位置曲线、不看积分状态，很难解释 windup 为什么发生。</p>
+<h2 id="section-13">9. 练习与已知批改</h2>
+<ol>
+<li>$J=2,K_p=12,K_d=4$。判断 $K_i=4,12,30$ 哪个不满足 $K_dK_p&gt;JK_i$。</li>
+<li>执行器上限为 $5$，$\tau_{cmd}=8$、$e=-0.2$。应暂停还是允许积分？说明原因。</li>
+<li>为什么越过目标后仍可能持续输出正向力矩？条件积分判断用 $e$ 还是 $\dot e$？只减小 $K_i$ 能否保证解决 windup？</li>
+</ol>
+<p><strong>历史批改：</strong>第 1 题 $K_i=30$ 不满足条件，要求 $0&lt;K_i&lt;24$。第 2 题是正向饱和但 $e&lt;0$，应允许积分，因为它减小正积分量，帮助退出饱和。第 3 题中，旧积分可能很大，即使 P、D 已反向，合成命令仍为正；条件积分根据 $e$ 是否加剧饱和，不看 $\dot e$。减小 $K_i$ 可减慢 windup，但不保证清除已积累积分。</p>
+<h2 id="section-14">本课小结</h2>
+<p>先检查理想 PID 的线性稳定条件，再分析执行器饱和。条件积分要看误差方向是否让饱和更严重；反算抗饱和会利用实际输出修正积分。稳定条件、整定质量和执行器限幅是相关但不同的问题。</p>
+<h2 id="section-15">课程衔接与条件检查</h2>
+<h3 id="section-16">用模型给调参增加一道依据</h3>
+<p>对理想惯量 PID，先用 Routh 得到可稳定的参数区间，再在区间内调整时域响应；有饱和时还要检查积分恢复。以 J=1、Kd=3、Kp=2、Ki=4 为例，线性模型稳定；若执行器只能输出很小力矩，初期长时间饱和仍可能导致显著过冲。</p>
+<p>抗饱和不是给线性稳定性“补证”，它处理的是实际控制输入与控制器期望输入不一致时的积分状态。使用回算时，应先统一误差和回算符号，再检查饱和解除后积分是否回落。</p>
+<p><strong>自查</strong>：若 τraw=−8、下限−5，此时误差为正，应暂停还是继续积分？</p>
+</article><div class="page-footer"><a href="07-稳态误差与终值定理.html">← 上一课</a><a href="09-数字PID实现.html">下一课 →</a></div></main>
+<nav class="sidebar" aria-label="课程总目录"><div class="sidebar-title">课程总目录</div><a class="nav-home" href="../index.html">首页 · 课程目录</a><div class="group-label">按学习阶段浏览</div><details class="nav-phase" open><summary><span class="phase-title">阶段 0｜经典控制基础与补桥</span><small>第 1–16 课：反馈、PID、稳定性与频域设计</small></summary><details class="nav-course"><summary><span class="course-number">第 1 课</span><span class="course-title">反馈控制与第一个 PD 控制器</span></summary><div class="nav-course-links"><a class="" href="01-反馈控制.html">讲解</a><a class="" href="../reviews/01-反馈控制.html">复习</a><a class="" href="../formulas/01-反馈控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 2 课</span><span class="course-title">二阶系统、阻尼比与超调量</span></summary><div class="nav-course-links"><a class="" href="02-二阶系统.html">讲解</a><a class="" href="../reviews/02-二阶系统.html">复习</a><a class="" href="../formulas/02-二阶系统.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 3 课</span><span class="course-title">拉普拉斯变换与传递函数</span></summary><div class="nav-course-links"><a class="" href="03-传递函数.html">讲解</a><a class="" href="../reviews/03-传递函数.html">复习</a><a class="" href="../formulas/03-传递函数.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 4 课</span><span class="course-title">极点、零点与系统稳定性</span></summary><div class="nav-course-links"><a class="" href="04-极点与零点.html">讲解</a><a class="" href="../reviews/04-极点与零点.html">复习</a><a class="" href="../formulas/04-极点与零点.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 5 课</span><span class="course-title">时间响应指标与 PD 控制器参数设计</span></summary><div class="nav-course-links"><a class="" href="05-PD参数设计.html">讲解</a><a class="" href="../reviews/05-PD参数设计.html">复习</a><a class="" href="../formulas/05-PD参数设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 6 课</span><span class="course-title">积分控制、稳态误差与积分饱和</span></summary><div class="nav-course-links"><a class="" href="06-积分控制.html">讲解</a><a class="" href="../reviews/06-积分控制.html">复习</a><a class="" href="../formulas/06-积分控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 7 课</span><span class="course-title">稳态误差与终值定理</span></summary><div class="nav-course-links"><a class="" href="07-稳态误差与终值定理.html">讲解</a><a class="" href="../reviews/07-稳态误差与终值定理.html">复习</a><a class="" href="../formulas/07-稳态误差与终值定理.html">公式</a></div></details><details class="nav-course" open><summary><span class="course-number">第 8 课</span><span class="course-title">PID 参数整定与积分抗饱和</span></summary><div class="nav-course-links"><a class="active" href="08-PID整定与抗饱和.html">讲解</a><a class="" href="../reviews/08-PID整定与抗饱和.html">复习</a><a class="" href="../formulas/08-PID整定与抗饱和.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 9 课</span><span class="course-title">数字 PID 实现</span></summary><div class="nav-course-links"><a class="" href="09-数字PID实现.html">讲解</a><a class="" href="../reviews/09-数字PID实现.html">复习</a><a class="" href="../formulas/09-数字PID实现.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 10 课</span><span class="course-title">Routh稳定判据</span></summary><div class="nav-course-links"><a class="" href="10-Routh稳定判据.html">讲解</a><a class="" href="../reviews/10-Routh稳定判据.html">复习</a><a class="" href="../formulas/10-Routh稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 11 课</span><span class="course-title">根轨迹与增益设计</span></summary><div class="nav-course-links"><a class="" href="11-根轨迹与增益设计.html">讲解</a><a class="" href="../reviews/11-根轨迹与增益设计.html">复习</a><a class="" href="../formulas/11-根轨迹与增益设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 12 课</span><span class="course-title">频率响应与 Bode 图</span></summary><div class="nav-course-links"><a class="" href="12-频率响应与Bode图.html">讲解</a><a class="" href="../reviews/12-频率响应与Bode图.html">复习</a><a class="" href="../formulas/12-频率响应与Bode图.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 13 课</span><span class="course-title">Nyquist 稳定判据——沿着曲线判断闭环稳定性</span></summary><div class="nav-course-links"><a class="" href="13-Nyquist稳定判据.html">讲解</a><a class="" href="../reviews/13-Nyquist稳定判据.html">复习</a><a class="" href="../formulas/13-Nyquist稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 14 课</span><span class="course-title">增益裕度与相位裕度</span></summary><div class="nav-course-links"><a class="" href="14-增益裕度与相位裕度.html">讲解</a><a class="" href="../reviews/14-增益裕度与相位裕度.html">复习</a><a class="" href="../formulas/14-增益裕度与相位裕度.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 15 课</span><span class="course-title">超前与滞后校正</span></summary><div class="nav-course-links"><a class="" href="15-超前与滞后校正.html">讲解</a><a class="" href="../reviews/15-超前与滞后校正.html">复习</a><a class="" href="../formulas/15-超前与滞后校正.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 16 课</span><span class="course-title">闭环带宽、延迟与鲁棒性</span></summary><div class="nav-course-links"><a class="" href="16-闭环带宽与延迟鲁棒性.html">讲解</a><a class="" href="../reviews/16-闭环带宽与延迟鲁棒性.html">复习</a><a class="" href="../formulas/16-闭环带宽与延迟鲁棒性.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 1｜数学与模型衔接</span><small>第 17–19 课：矩阵、特征值、传递函数与状态空间</small></summary><details class="nav-course"><summary><span class="course-number">第 17 课</span><span class="course-title">矩阵与状态向量——现代控制的数学语言</span></summary><div class="nav-course-links"><a class="" href="17-矩阵与状态向量.html">讲解</a><a class="" href="../reviews/17-矩阵与状态向量.html">复习</a><a class="" href="../formulas/17-矩阵与状态向量.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 18 课</span><span class="course-title">特征值与系统动态</span></summary><div class="nav-course-links"><a class="" href="18-特征值与系统动态.html">讲解</a><a class="" href="../reviews/18-特征值与系统动态.html">复习</a><a class="" href="../formulas/18-特征值与系统动态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 19 课</span><span class="course-title">传递函数到状态空间</span></summary><div class="nav-course-links"><a class="" href="19-传递函数到状态空间.html">讲解</a><a class="" href="../reviews/19-传递函数到状态空间.html">复习</a><a class="" href="../formulas/19-传递函数到状态空间.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 2｜现代线性控制核心</span><small>第 20–31 课：状态响应、反馈、LQR、估计与离散综合</small></summary><details class="nav-course"><summary><span class="course-number">第 20 课</span><span class="course-title">状态空间基础</span></summary><div class="nav-course-links"><a class="" href="20-状态空间基础.html">讲解</a><a class="" href="../reviews/20-状态空间基础.html">复习</a><a class="" href="../formulas/20-状态空间基础.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 21 课</span><span class="course-title">相平面与状态轨迹</span></summary><div class="nav-course-links"><a class="" href="21-相平面与状态轨迹.html">讲解</a><a class="" href="../reviews/21-相平面与状态轨迹.html">复习</a><a class="" href="../formulas/21-相平面与状态轨迹.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 22 课</span><span class="course-title">连续系统离散化</span></summary><div class="nav-course-links"><a class="" href="22-连续系统离散化.html">讲解</a><a class="" href="../reviews/22-连续系统离散化.html">复习</a><a class="" href="../formulas/22-连续系统离散化.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 23 课</span><span class="course-title">可控性与可达状态</span></summary><div class="nav-course-links"><a class="" href="23-可控性与可达状态.html">讲解</a><a class="" href="../reviews/23-可控性与可达状态.html">复习</a><a class="" href="../formulas/23-可控性与可达状态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 24 课</span><span class="course-title">线性系统的Lyapunov稳定性</span></summary><div class="nav-course-links"><a class="" href="24-线性系统的Lyapunov稳定性.html">讲解</a><a class="" href="../reviews/24-线性系统的Lyapunov稳定性.html">复习</a><a class="" href="../formulas/24-线性系统的Lyapunov稳定性.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 25 课</span><span class="course-title">状态反馈与极点配置</span></summary><div class="nav-course-links"><a class="" href="25-状态反馈与极点配置.html">讲解</a><a class="" href="../reviews/25-状态反馈与极点配置.html">复习</a><a class="" href="../formulas/25-状态反馈与极点配置.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 26 课</span><span class="course-title">LQR最优状态反馈</span></summary><div class="nav-course-links"><a class="" href="26-LQR最优状态反馈.html">讲解</a><a class="" href="../reviews/26-LQR最优状态反馈.html">复习</a><a class="" href="../formulas/26-LQR最优状态反馈.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 27 课</span><span class="course-title">状态反馈的参考跟踪</span></summary><div class="nav-course-links"><a class="" href="27-状态反馈的参考跟踪.html">讲解</a><a class="" href="../reviews/27-状态反馈的参考跟踪.html">复习</a><a class="" href="../formulas/27-状态反馈的参考跟踪.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 28 课</span><span class="course-title">可观测性与输出信息</span></summary><div class="nav-course-links"><a class="" href="28-可观测性与输出信息.html">讲解</a><a class="" href="../reviews/28-可观测性与输出信息.html">复习</a><a class="" href="../formulas/28-可观测性与输出信息.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 29 课</span><span class="course-title">Luenberger状态观测器</span></summary><div class="nav-course-links"><a class="" href="29-Luenberger状态观测器.html">讲解</a><a class="" href="../reviews/29-Luenberger状态观测器.html">复习</a><a class="" href="../formulas/29-Luenberger状态观测器.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 30 课</span><span class="course-title">观测器反馈与分离原理</span></summary><div class="nav-course-links"><a class="" href="30-观测器反馈与分离原理.html">讲解</a><a class="" href="../reviews/30-观测器反馈与分离原理.html">复习</a><a class="" href="../formulas/30-观测器反馈与分离原理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 31 课</span><span class="course-title">离散状态反馈与综合设计</span></summary><div class="nav-course-links"><a class="" href="31-离散状态反馈与综合设计.html">讲解</a><a class="" href="../reviews/31-离散状态反馈与综合设计.html">复习</a><a class="" href="../formulas/31-离散状态反馈与综合设计.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 3｜非线性控制进阶</span><small>后续计划：Lyapunov、LaSalle 与非线性控制</small></summary><div class="phase-coming">该阶段课程将在学习进度推进后加入。</div></details><details class="nav-phase"><summary><span class="phase-title">阶段 4｜机器人与车辆实践</span><small>控制器综合设计、MATLAB 与 C++ 实现</small></summary><details class="nav-course"><summary><span class="course-number">第 32 课</span><span class="course-title">机器人控制器综合设计</span></summary><div class="nav-course-links"><a class="" href="32-机器人控制器综合设计.html">讲解</a><a class="" href="../reviews/32-机器人控制器综合设计.html">复习</a><a class="" href="../formulas/32-机器人控制器综合设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 33 课</span><span class="course-title">MATLAB 仿真与 C++ 控制循环</span></summary><div class="nav-course-links"><a class="" href="33-MATLAB仿真与C++控制循环.html">讲解</a><a class="" href="../reviews/33-MATLAB仿真与C++控制循环.html">复习</a><a class="" href="../formulas/33-MATLAB仿真与C++控制循环.html">公式</a></div></details></details></nav>
+</div><script data-demo-module="demo-core">
+/* 共享交互基础设施：课程页面按需加载各 demo 的普通脚本，兼容 file:// 离线打开。 */
+(function(){
+  'use strict';
+  const registry = new Map();
+  const DEG = 180/Math.PI;
+  function color(light,dark){return document.documentElement.dataset.theme==='dark'?dark:light;}
+  function poleRoots(J,Kp,Kd){
+    const d=Kd*Kd-4*J*Kp;
+    return d>=0 ? [{re:(-Kd+Math.sqrt(d))/(2*J),im:0},{re:(-Kd-Math.sqrt(d))/(2*J),im:0}]
+      : [{re:-Kd/(2*J),im:Math.sqrt(-d)/(2*J)},{re:-Kd/(2*J),im:-Math.sqrt(-d)/(2*J)}];
+  }
+  function solve(J,Kp,Kd){
+    let q=0,v=0,t=0;const dt=.008,out=[],qr=Math.PI/2;
+    const rhs=(a,b)=>[b,(Kp*(qr-a)-Kd*b)/J];
+    for(let i=0;i<=750;i++){
+      out.push([t,q*DEG]);
+      const a=rhs(q,v),b=rhs(q+dt*a[0]/2,v+dt*a[1]/2),c=rhs(q+dt*b[0]/2,v+dt*b[1]/2),d=rhs(q+dt*c[0],v+dt*c[1]);
+      q+=dt*(a[0]+2*b[0]+2*c[0]+d[0])/6;
+      v+=dt*(a[1]+2*b[1]+2*c[1]+d[1])/6;t+=dt;
+    }
+    return out;
+  }
+  function canvasReady(canvas){
+    const w=Math.max(canvas.clientWidth,260),h=canvas.clientHeight||245,dpr=window.devicePixelRatio||1;
+    canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+    const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return {ctx,w,h};
+  }
+  function mountPD(node, options){
+    const J0=Number(node.dataset.j||1),Kp0=Number(node.dataset.kp||16),Kd0=Number(node.dataset.kd??8);
+    node.innerHTML=`<p class="demo-title">${options.title}</p><p class="demo-note">理想单关节模型，目标 90°、初始角度及速度为零；本地浏览器计算。</p>
+      <div class="demo-controls">
+      <div class="control"><label>J（kg·m²）<output data-out="j"></output></label><input data-param="j" type="range" min="0.5" max="5" step="0.5"></div>
+      <div class="control"><label>Kp（N·m/rad）<output data-out="kp"></output></label><input data-param="kp" type="range" min="2" max="36" step="2"></div>
+      <div class="control"><label>Kd（N·m·s/rad）<output data-out="kd"></output></label><input data-param="kd" type="range" min="0" max="24" step="1"></div>
+      </div><canvas class="demo-canvas" role="img" aria-label="互动数学模型的曲线"></canvas>
+      <div class="demo-meta" aria-live="polite"></div><div class="demo-caption">${options.caption}</div>`;
+    const inputs={};node.querySelectorAll('input').forEach(el=>inputs[el.dataset.param]=el);
+    inputs.j.value=String(J0);inputs.kp.value=String(Kp0);inputs.kd.value=String(Kd0);
+    const canvas=node.querySelector('canvas'),meta=node.querySelector('.demo-meta');
+    function draw(){
+      const J=+inputs.j.value,Kp=+inputs.kp.value,Kd=+inputs.kd.value;
+      for(const name of ['j','kp','kd'])node.querySelector('[data-out="'+name+'"]').textContent=inputs[name].value;
+      const z=Kd/(2*Math.sqrt(J*Kp)),wn=Math.sqrt(Kp/J);
+      const details=options.render(canvas,J,Kp,Kd);
+      meta.replaceChildren();
+      for(const str of [`阻尼比 ζ = ${z.toFixed(3)}`,`ωn = ${wn.toFixed(3)} rad/s`,...details]){
+        const s=document.createElement('span');s.textContent=str;meta.appendChild(s);
+      }
+    }
+    Object.values(inputs).forEach(el=>el.addEventListener('input',draw));
+    window.addEventListener('robot-theme-changed',draw);
+    if(typeof ResizeObserver!=='undefined')new ResizeObserver(draw).observe(canvas);
+    else window.addEventListener('resize',draw);
+    draw();
+  }
+  window.NoteDemos={register(name,mount){
+    if(registry.has(name))throw new Error('重复的演示名称：'+name);
+    registry.set(name,mount);
+  }, utils:{color,poleRoots,solve,canvasReady,mountPD}};
+  function boot(){
+    document.querySelectorAll('.demo[data-demo]').forEach(node=>{
+      const name=node.dataset.demo;
+      try{
+        if(!registry.has(name))throw new Error(`模块「${name}」没有注册`);
+        registry.get(name)(node,window.NoteDemos.utils);
+      }catch(err){
+        node.textContent=`演示加载失败（${name}）：${err.message}。正文和公式仍可阅读。`;
+        node.classList.add('demo-error');console.error(err);
+      }
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+
+</script>
+<script data-demo-module="design">
+/* 第 8 课：比较普通积分与条件积分在力矩饱和时的表现。 */
+(function () {
+  'use strict';
+  window.NoteDemos.register('design', function (node, u) {
+    node.innerHTML =
+      '<p class="demo-title">同一 PID 参数，不同抗饱和策略</p>' +
+      '<p class="demo-note">通过力矩限幅观察积分器是否在不可实现的输出上继续累积。</p>' +
+      '<div class="demo-controls"><div class="control"><label>Ki <output data-o="ki"></output></label><input data-p="ki" type="range" min="2" max="28" step="1" value="16"></div>' +
+      '<div class="control"><label>力矩上限 <output data-o="limit"></output></label><input data-p="limit" type="range" min="2" max="12" step="1" value="5"></div></div>' +
+      '<canvas class="demo-canvas" role="img" aria-label="普通积分和条件积分位置响应对比"></canvas>' +
+      '<div class="demo-meta" aria-live="polite"></div>' +
+      '<p class="demo-caption">橙色：普通积分；蓝色：条件积分。简化教学仿真，真实系统还需考虑采样、延迟与执行器细节。</p>';
+    const canvas=node.querySelector('canvas');
+    const c=Object.fromEntries([...node.querySelectorAll('input[data-p]')].map(x=>[x.dataset.p,x]));
+    const meta=node.querySelector('.demo-meta');
+    function draw(){
+      const ki=+c.ki.value, limit=+c.limit.value;
+      node.querySelector('[data-o="ki"]').textContent=ki;
+      node.querySelector('[data-o="limit"]').textContent=limit+' N·m';
+      const dt=.005,J=1,kp=10,kd=3,qd=1.5,out=[[],[]],zs=[0,0],qs=[0,0],vs=[0,0];
+      for(let i=0;i<1400;i++){
+        for(let j=0;j<2;j++){
+          const e=qd-qs[j],raw=kp*e+ki*zs[j]-kd*vs[j],sat=Math.max(-limit,Math.min(limit,raw));
+          const deepen=(raw>limit&&e>0)||(raw< -limit&&e<0);
+          if(i%10===0)out[j].push(qs[j]);
+          qs[j]+=vs[j]*dt;vs[j]+=(sat/J)*dt;
+          if(j===0||!deepen)zs[j]+=e*dt;
+          zs[j]=Math.max(-4,Math.min(4,zs[j]));
+        }
+      }
+      const {ctx,w,h}=u.canvasReady(canvas),p={l:44,r:12,t:16,b:28},y0=h-p.b,scale=(h-p.t-p.b)/2;
+      ctx.clearRect(0,0,w,h);ctx.fillStyle="#101b2b";ctx.fillRect(0,0,w,h);ctx.strokeStyle='#9bb1ca';ctx.beginPath();ctx.moveTo(p.l,p.t);ctx.lineTo(p.l,y0);ctx.lineTo(w-p.r,y0);ctx.stroke();
+      ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(p.l,y0-qd*scale);ctx.lineTo(w-p.r,y0-qd*scale);ctx.stroke();ctx.setLineDash([]);
+      [[out[0],'#ffb86b'],[out[1],'#5cdbd3']].forEach(([a,col])=>{ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();a.forEach((v,i)=>{const x=p.l+i*(w-p.l-p.r)/(a.length-1),y=y0-v*scale;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()});
+      meta.textContent='条件积分仅在误差会进一步加深饱和时暂停；误差帮助退出饱和时继续积分。Ki='+ki+'，力矩上限='+limit+' N·m。';
+    }
+    Object.values(c).forEach(x=>x.addEventListener('input',draw));draw();
+  });
+})();
+</script></body></html>

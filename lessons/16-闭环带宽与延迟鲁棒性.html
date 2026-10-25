@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
+<title>第 16 课 · 闭环带宽、延迟与鲁棒性 · 课程讲解｜机器人控制理论笔记</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('robot-note-theme')||'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
+<link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../courses/16-闭环带宽与延迟鲁棒性/demos/design.css">
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true,packages:{'[+]':['base','ams']}},svg:{fontCache:'local'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
+<script defer src="../assets/mathjax-tex-svg.js"></script><script defer src="../assets/theme.js"></script>
+</head><body>
+<header class="mast"><div class="mast-inner"><a class="brand" href="../index.html">机器人控制理论笔记 <small>持续更新 · 离线 HTML</small></a><div class="top-actions"><span class="top-indicator">已整理 33 课</span><button id="themeToggle" type="button" class="theme-toggle" aria-label="切换日间与夜间模式" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">夜间模式</span></button></div></div></header>
+<div class="layout">
+<aside class="toc" aria-label="本章目录"><div class="toc-label">本章目录</div><a class="h2" href="#section-1">一、从“目标变化时，机械臂能跟多快”开始</a><a class="h2" href="#section-2">二、带宽是什么：从低频能跟，到高频跟不上</a><a class="h3" href="#section-3">一个一阶系统的直觉</a><a class="h2" href="#section-4">三、用比例控制器看见“增益提高，响应变快”</a><a class="h2" href="#section-5">四、闭环带宽不等于开环交越频率</a><a class="h2" href="#section-6">五、延迟为何危险：幅值不变，滞后持续增加</a><a class="h2" href="#section-7">六、用相位裕度估算延迟余量</a><a class="h3" href="#section-8">数字例子：高增益换来更小的延迟容忍度</a><a class="h2" href="#section-9">同一个闭环中，交越频率、带宽与延迟分别是多少？</a><a class="h3" href="#section-10">先预测，再展开核对</a><a class="h2" href="#section-11">七、交互实验：改变增益、系统快慢和延迟</a><a class="h2" href="#section-12">八、鲁棒性：模型不完全准确时还能不能工作？</a><a class="h2" href="#section-13">九、MATLAB：手工绘制含延迟的开环曲线</a><a class="h2" href="#section-14">十、本课知识连接</a><a class="h2" href="#section-15">十一、本课公式卡</a><a class="h2" href="#section-16">十二、第 16 课课后练习</a><a class="h3" href="#section-17">练习 1：计算闭环带宽</a><a class="h3" href="#section-18">练习 2：延迟带来的相位损失</a><a class="h3" href="#section-19">练习 3：估算延迟余量</a><a class="h3" href="#section-20">练习 4：联系机器人调参</a><a class="h2" href="#section-21">课程衔接与条件检查</a><a class="h3" href="#section-22">区分开环交越和闭环带宽</a></aside>
+<main class="main" id="content"><div class="eyebrow">第 16 课 / 课程讲解</div><div class="chapter-tabs"><a class="active" href="16-闭环带宽与延迟鲁棒性.html">课程讲解</a><a class="" href="../reviews/16-闭环带宽与延迟鲁棒性.html">复习笔记</a><a class="" href="../formulas/16-闭环带宽与延迟鲁棒性.html">公式手册</a></div><article class="prose"><h1>第 16 课：闭环带宽、延迟与鲁棒性</h1>
+<blockquote>
+<p>第 3 周｜第 3 节：既要跟得快，也要留有余量</p>
+</blockquote>
+<p>第 12 课我们学了：频率越高，系统可能跟得越小、越晚。第 14 课又学了：增益裕度和相位裕度能表示开环系统离临界状态还有多少余量。</p>
+<p>这一课把两条线索合在一起，回答一个实际设计问题：</p>
+<p><strong>怎样让机器人跟踪得更快，同时又不因为计算、通信或传感器延迟而变得容易振荡？</strong></p>
+<p>我们会先从闭环的输入输出关系理解“带宽”，再用一个简单的电机位置环算出提高增益的效果，最后观察延迟如何随频率增长、消耗相位裕度，并讨论这和鲁棒性的关系。</p>
+<p>学完后，你应该能：</p>
+<ol>
+<li>用自己的话解释闭环带宽表示什么。</li>
+<li>区分闭环带宽与开环增益交越频率。</li>
+<li>说明纯延迟为何不改变幅值，却会增加相位滞后。</li>
+<li>用相位裕度估算一个简单系统还能容忍多少额外延迟。</li>
+<li>解释“更快”与“更稳健”为什么常常需要权衡。</li>
+</ol>
+<h2 id="section-1">一、从“目标变化时，机械臂能跟多快”开始</h2>
+<p>想象机械臂跟踪一个逐渐变快的正弦目标：</p>
+<p>$$
+q_d(t)=A\sin(\omega t)
+$$</p>
+<p>目标变化很慢时，控制器有时间让关节跟上；目标变化得很快时，机械臂可能逐渐跟不上。实际角度可能比目标小，也可能晚一些才到达相同位置。</p>
+<p>第 12 课用频率响应描述这种现象。但本课更关心<strong>闭环</strong>：从目标位置 $r$ 到实际位置 $y$ 的整条反馈系统，最终能跟踪多快？</p>
+<p>单位负反馈下：</p>
+<p>$$
+L(s)=C(s)P(s),\qquad
+T(s)=\frac{Y(s)}{R(s)}=\frac{L(s)}{1+L(s)}
+$$</p>
+<p>$L(s)$ 是开环环路，$T(s)$ 是闭环目标到输出的传递函数。带宽通常讨论的是闭环 $T(s)$，因为它直接描述“给目标后，实际输出跟得如何”。</p>
+<p><img alt="闭环系统：从目标输入到实际输出的路径" src="../courses/16-闭环带宽与延迟鲁棒性/media/closed-loop-bandwidth.svg"/></p>
+<p>图 1：闭环带宽关心从目标到输出的整体响应速度；开环裕度则用来检查反馈环路的稳定余量。</p>
+<h2 id="section-2">二、带宽是什么：从低频能跟，到高频跟不上</h2>
+<p>先看一个低通型的闭环系统。目标变化很慢时，输出幅值接近目标；频率逐渐升高后，输出幅值开始衰减。</p>
+<p>为了给“开始明显跟不上”一个统一读数，常用 <strong>−3 dB 带宽</strong>。相对于低频稳态增益，当闭环幅值降到低频值的 $1/\sqrt2\approx0.707$ 时，对应的频率叫带宽：</p>
+<p>$$
+\boxed{|T(j\omega_{BW})|=\frac{|T(0)|}{\sqrt2}}
+$$</p>
+<p>如果低频增益约等于 1，也就是 0 dB，那么 −3 dB 点对应闭环幅值约为 0.707。</p>
+<p>带宽较大，通常意味着系统能跟踪更快变化的目标；带宽较小，系统会更早开始衰减。但带宽并不直接告诉你所有动态表现：超调、振铃、时延、噪声放大和执行器饱和还需要分别检查。</p>
+<h3 id="section-3">一个一阶系统的直觉</h3>
+<p>一阶低通闭环可写成：</p>
+<p>$$
+T(s)=\frac{1}{\tau_{cl}s+1}
+$$</p>
+<p>它的带宽为：</p>
+<p>$$
+\omega_{BW}=\frac1{\tau_{cl}}
+$$</p>
+<p>时间常数越小，带宽越大，系统响应越快。对这种一阶系统，上升时间常用近似：</p>
+<p>$$
+T_r\approx\frac{2.2}{\omega_{BW}}
+$$</p>
+<p>这个关系帮助我们建立直觉，不应该直接套到有明显振荡、多个时间尺度或时延的复杂机器人系统。</p>
+<h2 id="section-4">三、用比例控制器看见“增益提高，响应变快”</h2>
+<p>假设一个简化电机位置系统为：</p>
+<p>$$
+P(s)=\frac{1}{\tau s+1}
+$$</p>
+<p>控制器只使用比例增益 $K$：</p>
+<p>$$
+C(s)=K
+$$</p>
+<p>于是：</p>
+<p>$$
+L(s)=\frac{K}{\tau s+1}
+$$</p>
+<p>单位负反馈闭环为：</p>
+<p>$$
+T(s)=\frac{K}{\tau s+1+K}
+=\frac{K}{1+K}\cdot
+\frac{1}{\frac{\tau}{1+K}s+1}
+$$</p>
+<p>这个结果告诉我们两件事：</p>
+<ul>
+<li>低频闭环增益为 $K/(1+K)$。$K$ 越大，最终位置越接近目标。</li>
+<li>闭环时间常数为 $\tau/(1+K)$，所以闭环 −3 dB 带宽为：</li>
+</ul>
+<p>$$
+\boxed{\omega_{BW}=\frac{1+K}{\tau}}
+$$</p>
+<p>这里用的是<strong>闭环幅值相对自身低频值下降 3 dB</strong>的定义。因为这个简单比例控制系统有稳态跟踪误差，不能误把其直流增益 $K/(1+K)$ 当成 1。</p>
+<p>例如取 $\tau=0.2\,\mathrm{s}$：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">比例增益 $K$</th>
+<th style="text-align:right">低频闭环增益 $K/(1+K)$</th>
+<th style="text-align:right">闭环带宽 $\omega_{BW}$</th>
+<th>直观表现</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">1</td>
+<td style="text-align:right">0.50</td>
+<td style="text-align:right">10 rad/s</td>
+<td>跟踪偏慢，稳态误差较大</td>
+</tr>
+<tr>
+<td style="text-align:right">2</td>
+<td style="text-align:right">0.67</td>
+<td style="text-align:right">15 rad/s</td>
+<td>更快，稳态误差减小</td>
+</tr>
+<tr>
+<td style="text-align:right">10</td>
+<td style="text-align:right">0.91</td>
+<td style="text-align:right">55 rad/s</td>
+<td>更快，低频跟踪更接近目标</td>
+</tr>
+</tbody>
+</table>
+<p>这看起来像是“把 $K$ 调大就好”。但还没考虑延迟。高增益会把开环增益交越频率推高，而高频处的延迟相位损失更严重。</p>
+<h2 id="section-5">四、闭环带宽不等于开环交越频率</h2>
+<p>第 14 课里我们找过增益交越频率 $\omega_{gc}$：</p>
+<p>$$
+|L(j\omega_{gc})|=1
+$$</p>
+<p>这是一种<strong>开环读数</strong>。本课的 $\omega_{BW}$ 来自闭环传递函数 $T(s)$，是一种<strong>闭环读数</strong>。两者常常有关联，但定义不同，数值也不保证相等。</p>
+<p>对刚才的比例控制例子，若 $K&gt;1$，开环增益交越频率为：</p>
+<p>$$
+\omega_{gc}=\frac{\sqrt{K^2-1}}{\tau}
+$$</p>
+<p>闭环带宽则为：</p>
+<p>$$
+\omega_{BW}=\frac{1+K}{\tau}
+$$</p>
+<p>以 $K=2,\tau=0.2\,\mathrm{s}$ 为例：</p>
+<p>$$
+\omega_{gc}=\frac{\sqrt3}{0.2}\approx8.66\,\mathrm{rad/s},
+\qquad
+\omega_{BW}=\frac3{0.2}=15\,\mathrm{rad/s}
+$$</p>
+<p>二者不是同一个数字。不同系统结构和控制器下，它们之间的关系也会改变。读图或看软件输出时，先确认自己要的是开环交越频率还是闭环带宽。</p>
+<h2 id="section-6">五、延迟为何危险：幅值不变，滞后持续增加</h2>
+<p>控制程序读传感器、计算控制量、等待通信和执行器响应，都可能产生延迟。纯延迟可以写成：</p>
+<p>$$
+D(s)=e^{-sT_d}
+$$</p>
+<p>令 $s=j\omega$：</p>
+<p>$$
+D(j\omega)=e^{-j\omega T_d}
+$$</p>
+<p>它的幅值为：</p>
+<p>$$
+|D(j\omega)|=1
+$$</p>
+<p>它的相位为：</p>
+<p>$$
+\boxed{\phi_d(\omega)=-\omega T_d\quad\text{（弧度）}}
+$$</p>
+<p>所以，纯延迟本身不改变正弦信号的幅值，却让信号落后。频率越高，同样的延迟对应越大的相位滞后。</p>
+<p><img alt="延迟越长，频率越高，产生的额外相位滞后越大" src="../courses/16-闭环带宽与延迟鲁棒性/media/delay-phase-dark.svg"/></p>
+<p>图 2：曲线使用深色底和高对比标注。它只显示纯延迟带来的相位变化，不代表某台机器人的完整 Bode 曲线。</p>
+<p>如果用角度表示：</p>
+<p>$$
+\phi_d(\omega)=-\omega T_d\frac{180^\circ}{\pi}
+$$</p>
+<p>例如 $T_d=0.02\,\mathrm{s}$：</p>
+<ul>
+<li>$\omega=5\,\mathrm{rad/s}$ 时，延迟约带来 $-5.7^\circ$ 相位。</li>
+<li>$\omega=50\,\mathrm{rad/s}$ 时，延迟约带来 $-57.3^\circ$ 相位。</li>
+</ul>
+<p>同样 20 ms，对慢变化影响较小，对快变化可能非常关键。</p>
+<p><img alt="纯延迟的相位滞后随频率增加而增大，延迟越长，曲线下降越快" src="../courses/16-闭环带宽与延迟鲁棒性/media/delay-phase-dark.svg"/></p>
+<p>图 2：纵轴是延迟额外带来的相位，横轴是角频率。延迟不改幅值，却会在高频处显著消耗相位余量。</p>
+<h2 id="section-7">六、用相位裕度估算延迟余量</h2>
+<p>考虑无额外延迟时的开环：</p>
+<p>$$
+L_0(s)=\frac{K}{\tau s+1}
+$$</p>
+<p>若增益交越频率处原来的相位裕度为 $\mathrm{PM}_0$，加入纯延迟后，该频率的相位额外减少 $\omega_{gc}T_d$ 弧度。因为纯延迟的幅值为 1，增益交越频率保持不变。因此在这个简化模型下：</p>
+<p>$$
+\mathrm{PM}(T_d)
+=\mathrm{PM}_0-\omega_{gc}T_d\frac{180^\circ}{\pi}
+$$</p>
+<p>令新的相位裕度刚好降到 $0^\circ$，可得到延迟余量估算：</p>
+<p>$$
+\boxed{T_{d,\max}\approx\frac{\mathrm{PM}_{0,\mathrm{rad}}}{\omega_{gc}}}
+$$</p>
+<p>注意公式里的 PM 要用<strong>弧度</strong>。如果 PM 用角度，先乘 $\pi/180$ 再代入。</p>
+<h3 id="section-8">数字例子：高增益换来更小的延迟容忍度</h3>
+<p>仍取 $\tau=0.2\,\mathrm{s}$。对 $K&gt;1$：</p>
+<p>$$
+\mathrm{PM}_0=180^\circ-\arctan\!\left(\sqrt{K^2-1}\right)\frac{180^\circ}{\pi}
+$$</p>
+<ul>
+<li>$K=2$：$\omega_{gc}\approx8.66\,\mathrm{rad/s}$，$\mathrm{PM}_0=120^\circ=2.094\,\mathrm{rad}$，所以 $T_{d,\max}\approx0.242\,\mathrm{s}$。</li>
+<li>$K=10$：$\omega_{gc}\approx49.75\,\mathrm{rad/s}$，</li>
+</ul>
+<p>$$
+\mathrm{PM}_0\approx95.7^\circ=1.67\,\mathrm{rad}
+$$</p>
+<p>所以 $T_{d,\max}\approx0.0336\,\mathrm{s}$。</p>
+<p>增益从 2 增加到 10 后，这个简化系统的闭环带宽从 15 提高到 55 rad/s；但估算的延迟余量从约 242 ms 降到约 34 ms。</p>
+<p>这就是本课的重要权衡：<strong>响应可能更快，但对延迟和模型误差更敏感。</strong></p>
+<h2 id="section-9">同一个闭环中，交越频率、带宽与延迟分别是多少？</h2>
+<p>选对象1/(s+1)、比例增益2，环路与闭环为：</p>
+<p>$$L(s)=\frac2{s+1},\qquad T(s)=\frac2{s+3}.$$</p>
+<p>开环幅值为1的位置是：</p>
+<p>$$\omega_{gc}=\sqrt{2^2-1}=\sqrt3\approx1.732\ \mathrm{rad/s}.$$</p>
+<p>闭环直流增益为2/3；按相对直流−3 dB定义带宽，得到：</p>
+<p>$$\frac{|T(j\omega_{bw})|}{|T(0)|}=\frac1{\sqrt2}\quad\Longrightarrow\quad\omega_{bw}=3\ \mathrm{rad/s}.$$</p>
+<p>它们相关，却不是同一个数。未加延迟时PM为120°；纯延迟0.1 s不改变开环幅值，却在交越处增加约9.92°滞后：</p>
+<p>$$\Delta\phi=-\omega_{gc}\tau=-0.1732\ \mathrm{rad}\approx-9.92^\circ.$$</p>
+<p>此例的稳定延迟边界可由首个虚轴交点精确算得约1.209 s；在一般复杂系统中，PM/交越频率只是有条件的延迟余量估计。图中比较相对直流归一的闭环幅值和未延迟开环幅值，再单独画延迟损失。</p>
+<p><img alt="本课数值例子的定量对照图" src="../courses/16-闭环带宽与延迟鲁棒性/media/worked-example-dark.svg"/></p>
+<p><strong>读图与操作</strong>：先设延迟为0确认基准，再增加延迟；保持增益不变以区分幅值和相位各发生什么变化。</p>
+<p><strong>使用条件</strong>：相对直流带宽需要有限非零直流值；本例简单环路只有一个正增益交越。</p>
+<h3 id="section-10">先预测，再展开核对</h3>
+<p>为什么计算−3 dB带宽时不能直接把闭环幅值与0.707比较？</p>
+<details><summary>查看思路与答案</summary>
+<p>因为本例直流增益不是1；阈值应为(2/3)/√2≈0.4714。先归一化后才可比较0.707。</p>
+</details>
+<h2 id="section-11">七、交互实验：改变增益、系统快慢和延迟</h2>
+<p>下面的模型仍是 $P(s)=1/(\tau s+1)$、$C(s)=K$。滑块会同时更新开环 Bode 曲线、增益交越处相位裕度、闭环带宽和估算的延迟余量。</p>
+<div class="demo" data-demo="design" data-mode="bandwidth"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>
+<p>建议按这个顺序观察：</p>
+<ol>
+<li>固定 $\tau=0.2\,\mathrm{s}$、$T_d=0$，把 $K$ 从 2 增大到 10。</li>
+<li>看闭环带宽如何增加，也看开环交越频率如何向右移动。</li>
+<li>保持 $K=10$，把延迟慢慢增加到约 $0.03\,\mathrm{s}$ 以上，观察相位裕度如何接近或越过 $0^\circ$。</li>
+<li>再降低 $K$ 或增大 $\tau$，观察系统如何用较低带宽换取更多延迟余量。</li>
+</ol>
+<p>演示中的闭环带宽公式对应<strong>无额外延迟时的一阶模型</strong>；延迟滑块显示的是开环相位裕度如何变化及延迟余量估算。延迟后的真实闭环时域响应可能出现振铃或不稳定，需用完整时延模型再仿真。</p>
+<h2 id="section-12">八、鲁棒性：模型不完全准确时还能不能工作？</h2>
+<p>设计控制器时，模型参数不可能永远精确。真实机械臂可能存在：</p>
+<ul>
+<li>惯量变化：换了负载，$J$ 就变了。</li>
+<li>摩擦变化：低速时的摩擦与高速时不同。</li>
+<li>通信和计算延迟变化：任务负载、网络状态会改变周期。</li>
+<li>柔性、间隙和高频振动：简化刚体模型里没有这些动态。</li>
+<li>执行器饱和：控制器要求的力矩超过电机能力。</li>
+<li>传感器噪声、量化和滤波：测到的速度或位置并不完美。</li>
+</ul>
+<p><strong>鲁棒性</strong>关心的是：这些不确定性存在时，系统是否仍能保持稳定，并达到可接受的跟踪、噪声和控制量表现。</p>
+<p>PM、GM 是分析鲁棒性的有用线索：较小的裕度通常意味着可容忍的相位变化或增益变化较少。但裕度只根据特定线性模型和环路定义计算，不能自动覆盖饱和、死区、时变延迟、多个回路耦合等全部问题。</p>
+<p>因此工程验证通常要把几种方法结合起来：</p>
+<ul>
+<li>用开环 Bode 图看交越与稳定裕度。</li>
+<li>用闭环阶跃、正弦轨迹看跟踪速度、误差和振铃。</li>
+<li>在合理范围内改变惯量、延迟、摩擦等参数，检查性能是否明显变坏。</li>
+<li>检查力矩、速度和加速度是否超出执行器能力。</li>
+<li>用真实采样周期、滤波和通信链路进行仿真或硬件测试。</li>
+</ul>
+<h2 id="section-13">九、MATLAB：手工绘制含延迟的开环曲线</h2>
+<p>下面不需要 Control System Toolbox。我们直接使用幅值与相位公式，比较“无额外延迟”和“有延迟”的开环 Bode 曲线。</p>
+<div class="code-panel"><div class="code-label">MATLAB</div><pre class="code-highlight"><code><span class="nb">clc</span><span class="p">;</span>
+<span class="nb">clear</span><span class="p">;</span>
+<span class="n">close</span><span class="w"> </span><span class="s">all</span><span class="p">;</span>
+
+<span class="n">K</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span><span class="w">          </span><span class="c">% 比例增益</span>
+<span class="n">tau</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.2</span><span class="p">;</span><span class="w">       </span><span class="c">% 被控对象时间常数 (s)</span>
+<span class="n">Td</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.02</span><span class="p">;</span><span class="w">       </span><span class="c">% 额外纯延迟 (s)</span>
+
+<span class="c">% 对 K &gt; 1，此一阶开环存在 0 dB 交越</span>
+<span class="n">omega_gc</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="n">K</span><span class="o">^</span><span class="mi">2</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">tau</span><span class="p">;</span>
+
+<span class="c">% 生成对数分布角频率</span>
+<span class="n">omega</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">logspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">600</span><span class="p">);</span>
+
+<span class="c">% 开环幅值：纯延迟的幅值为 1，因此不改变此曲线</span>
+<span class="n">mag</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">K</span><span class="w"> </span><span class="o">./</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">omega</span><span class="o">*</span><span class="n">tau</span><span class="p">)</span><span class="o">.^</span><span class="mi">2</span><span class="p">);</span>
+<span class="n">mag_dB</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">20</span><span class="o">*</span><span class="nb">log10</span><span class="p">(</span><span class="n">mag</span><span class="p">);</span>
+
+<span class="c">% 一阶对象相位；额外延迟另加 -omega*Td</span>
+<span class="n">phase_plant</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="o">-</span><span class="nb">atan</span><span class="p">(</span><span class="n">omega</span><span class="o">*</span><span class="n">tau</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">180</span><span class="o">/</span><span class="nb">pi</span><span class="p">;</span>
+<span class="n">phase_delay</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="o">-</span><span class="n">omega</span><span class="o">*</span><span class="n">Td</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">180</span><span class="o">/</span><span class="nb">pi</span><span class="p">;</span>
+<span class="n">phase_no_delay</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">phase_plant</span><span class="p">;</span>
+<span class="n">phase_with_delay</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">phase_plant</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">phase_delay</span><span class="p">;</span>
+
+<span class="c">% 在增益交越频率计算相位裕度</span>
+<span class="n">PM0</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">180</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">atan</span><span class="p">(</span><span class="n">omega_gc</span><span class="o">*</span><span class="n">tau</span><span class="p">)</span><span class="o">*</span><span class="mi">180</span><span class="o">/</span><span class="nb">pi</span><span class="p">;</span>
+<span class="n">PM</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">PM0</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">omega_gc</span><span class="o">*</span><span class="n">Td</span><span class="o">*</span><span class="mi">180</span><span class="o">/</span><span class="nb">pi</span><span class="p">;</span>
+<span class="n">delay_margin</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">(</span><span class="n">PM0</span><span class="o">*</span><span class="nb">pi</span><span class="o">/</span><span class="mi">180</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">omega_gc</span><span class="p">;</span>
+
+<span class="c">% 这个闭环带宽公式是无额外延迟的一阶闭环结果</span>
+<span class="n">bandwidth_no_delay</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">K</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">tau</span><span class="p">;</span>
+
+<span class="nb">fprintf</span><span class="p">(</span><span class="s">'增益交越频率 = %.2f rad/s\n'</span><span class="p">,</span><span class="w"> </span><span class="n">omega_gc</span><span class="p">);</span>
+<span class="nb">fprintf</span><span class="p">(</span><span class="s">'无额外延迟时 PM = %.2f deg\n'</span><span class="p">,</span><span class="w"> </span><span class="n">PM0</span><span class="p">);</span>
+<span class="nb">fprintf</span><span class="p">(</span><span class="s">'当前延迟下估算 PM = %.2f deg\n'</span><span class="p">,</span><span class="w"> </span><span class="n">PM</span><span class="p">);</span>
+<span class="nb">fprintf</span><span class="p">(</span><span class="s">'估算延迟余量 = %.4f s\n'</span><span class="p">,</span><span class="w"> </span><span class="n">delay_margin</span><span class="p">);</span>
+<span class="nb">fprintf</span><span class="p">(</span><span class="s">'无额外延迟闭环带宽 = %.2f rad/s\n'</span><span class="p">,</span><span class="w"> </span><span class="n">bandwidth_no_delay</span><span class="p">);</span>
+
+<span class="nb">figure</span><span class="p">;</span>
+
+<span class="nb">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span>
+<span class="nb">semilogx</span><span class="p">(</span><span class="n">omega</span><span class="p">,</span><span class="w"> </span><span class="n">mag_dB</span><span class="p">,</span><span class="w"> </span><span class="s">'LineWidth'</span><span class="p">,</span><span class="w"> </span><span class="mf">1.6</span><span class="p">);</span>
+<span class="n">hold</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">yline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s">'k--'</span><span class="p">,</span><span class="w"> </span><span class="s">'0 dB'</span><span class="p">);</span>
+<span class="nb">xline</span><span class="p">(</span><span class="n">omega_gc</span><span class="p">,</span><span class="w"> </span><span class="s">'Color'</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="mf">0.2</span><span class="w"> </span><span class="mf">0.5</span><span class="w"> </span><span class="mf">0.8</span><span class="p">],</span><span class="w"> </span><span class="s">'LineStyle'</span><span class="p">,</span><span class="w"> </span><span class="s">'--'</span><span class="p">);</span>
+<span class="n">grid</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">ylabel</span><span class="p">(</span><span class="s">'Magnitude (dB)'</span><span class="p">);</span>
+<span class="nb">title</span><span class="p">(</span><span class="s">'Open-loop Bode plot: P(s)=1/(tau*s+1), C(s)=K'</span><span class="p">);</span>
+<span class="nb">legend</span><span class="p">(</span><span class="s">'Magnitude'</span><span class="p">,</span><span class="w"> </span><span class="s">'Gain crossover level'</span><span class="p">,</span><span class="w"> </span><span class="s">'omega_{gc}'</span><span class="p">,</span><span class="w"> </span><span class="s">'Location'</span><span class="p">,</span><span class="w"> </span><span class="s">'best'</span><span class="p">);</span>
+
+<span class="nb">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">);</span>
+<span class="nb">semilogx</span><span class="p">(</span><span class="n">omega</span><span class="p">,</span><span class="w"> </span><span class="n">phase_no_delay</span><span class="p">,</span><span class="w"> </span><span class="s">'LineWidth'</span><span class="p">,</span><span class="w"> </span><span class="mf">1.6</span><span class="p">);</span>
+<span class="n">hold</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">semilogx</span><span class="p">(</span><span class="n">omega</span><span class="p">,</span><span class="w"> </span><span class="n">phase_with_delay</span><span class="p">,</span><span class="w"> </span><span class="s">'LineWidth'</span><span class="p">,</span><span class="w"> </span><span class="mf">1.6</span><span class="p">);</span>
+<span class="nb">yline</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span><span class="w"> </span><span class="s">'k--'</span><span class="p">,</span><span class="w"> </span><span class="s">'-180 deg'</span><span class="p">);</span>
+<span class="nb">xline</span><span class="p">(</span><span class="n">omega_gc</span><span class="p">,</span><span class="w"> </span><span class="s">'Color'</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="mf">0.2</span><span class="w"> </span><span class="mf">0.5</span><span class="w"> </span><span class="mf">0.8</span><span class="p">],</span><span class="w"> </span><span class="s">'LineStyle'</span><span class="p">,</span><span class="w"> </span><span class="s">'--'</span><span class="p">);</span>
+<span class="n">grid</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">xlabel</span><span class="p">(</span><span class="s">'Angular frequency (rad/s)'</span><span class="p">);</span>
+<span class="nb">ylabel</span><span class="p">(</span><span class="s">'Phase (deg)'</span><span class="p">);</span>
+<span class="nb">legend</span><span class="p">(</span><span class="s">'No extra delay'</span><span class="p">,</span><span class="w"> </span><span class="s">'With delay'</span><span class="p">,</span><span class="w"> </span><span class="s">'-180 deg'</span><span class="p">,</span><span class="w"> </span><span class="s">'omega_{gc}'</span><span class="p">,</span><span class="w"> </span><span class="k">...</span>
+<span class="w">       </span><span class="s">'Location'</span><span class="p">,</span><span class="w"> </span><span class="s">'best'</span><span class="p">);</span></code></pre></div>
+<p>运行后重点观察：</p>
+<ul>
+<li>上图的幅值曲线没有因纯延迟而变化，0 dB 交越仍在同一位置。</li>
+<li>下图的延迟曲线会比无延迟曲线更低；越到高频，两条曲线差距越大。</li>
+<li>在 $\omega_{gc}$ 的竖线上读取延迟后的相位，再计算当前 PM。</li>
+<li>若 PM 接近 $0^\circ$ 或变成负值，说明系统已经接近或越过这个简化模型预测的稳定边界。</li>
+</ul>
+<h2 id="section-14">十、本课知识连接</h2>
+<p>$$
+\boxed{
+\text{比例增益 }K\uparrow
+\ \Longrightarrow\
+\text{闭环带宽通常增大}
+\ \Longrightarrow\
+\text{开环交越频率上升}
+\ \Longrightarrow\
+\text{同样的延迟造成更大相位损失}
+}
+$$</p>
+<p>设计目标不是无限提高带宽，而是在响应速度、稳定余量、传感器噪声和执行器能力之间找到合适折中。</p>
+<h2 id="section-15">十一、本课公式卡</h2>
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>公式</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>单位负反馈闭环</td>
+<td>$T(s)=L(s)/(1+L(s))$</td>
+<td>目标到输出</td>
+</tr>
+<tr>
+<td>−3 dB 闭环带宽</td>
+<td>$|T(j\omega_{BW})|=|T(0)|/\sqrt2$</td>
+<td>相对低频闭环增益定义</td>
+</tr>
+<tr>
+<td>一阶低通带宽</td>
+<td>$\omega_{BW}=1/\tau_{cl}$</td>
+<td>适用于标准一阶低通</td>
+</tr>
+<tr>
+<td>一阶上升时间近似</td>
+<td>$T_r\approx2.2/\omega_{BW}$</td>
+<td>一阶系统近似</td>
+</tr>
+<tr>
+<td>纯延迟幅值</td>
+<td>$|e^{-j\omega T_d}|=1$</td>
+<td>不改变幅值</td>
+</tr>
+<tr>
+<td>纯延迟相位</td>
+<td>$\phi_d=-\omega T_d$</td>
+<td>弧度</td>
+</tr>
+<tr>
+<td>延迟余量近似</td>
+<td>$T_{d,\max}\approx\mathrm{PM}_{0,\mathrm{rad}}/\omega_{gc}$</td>
+<td>交越附近的简化估算</td>
+</tr>
+<tr>
+<td>本课闭环带宽</td>
+<td>$\omega_{BW}=(1+K)/\tau$</td>
+<td>$P=1/(\tau s+1)$、比例 $C=K$，相对直流增益的 −3 dB</td>
+</tr>
+</tbody>
+</table>
+<h2 id="section-16">十二、第 16 课课后练习</h2>
+<p>先自己完成，我会逐题批改，讲清楚计算和物理含义。批改后会等你说“下一课”，不会自动跳到第 20 课。</p>
+<h3 id="section-17">练习 1：计算闭环带宽</h3>
+<p>对象为 $P(s)=1/(0.25s+1)$，比例增益 $K=4$。请计算：</p>
+<ol>
+<li>闭环低频增益 $K/(1+K)$。</li>
+<li>按相对低频值定义的闭环带宽 $\omega_{BW}$。</li>
+<li>增大 $K$ 后，带宽与稳态跟踪误差分别怎样变化？</li>
+</ol>
+<h3 id="section-18">练习 2：延迟带来的相位损失</h3>
+<p>控制系统在 $\omega_{gc}=20\,\mathrm{rad/s}$ 处有 $60^\circ$ 的无延迟相位裕度。现在增加 $T_d=0.02\,\mathrm{s}$ 的纯延迟。</p>
+<ol>
+<li>额外相位滞后是多少度？</li>
+<li>近似的新 PM 是多少度？</li>
+</ol>
+<h3 id="section-19">练习 3：估算延迟余量</h3>
+<p>若 $\mathrm{PM}_0=45^\circ$，$\omega_{gc}=15\,\mathrm{rad/s}$，请估算 $T_{d,\max}$。记得先把角度换成弧度。</p>
+<h3 id="section-20">练习 4：联系机器人调参</h3>
+<p>提高位置环 $K_p$ 后，机器人动作变快，但对通信延迟、负载变化更敏感。请用“带宽、交越频率、延迟相位损失、鲁棒性”把这个现象串起来，并举出一个裕度指标没有覆盖到的非线性因素。</p>
+<p>本课核心：<strong>带宽描述闭环跟踪能有多快；延迟会按频率增加相位滞后；鲁棒设计要为真实系统的不确定性留余量。</strong></p>
+<h2 id="section-21">课程衔接与条件检查</h2>
+<h3 id="section-22">区分开环交越和闭环带宽</h3>
+<p>闭环 T=L/(1+L)。通常以 $|T(j\omega_{bw})|=|T(0)|/\sqrt2$ 定义相对直流 −3 dB 带宽，要求直流值有限且非零，并说明有峰值或多交点时如何选取。开环增益交越满足 |L|=1，两者常相关，却并非恒等。</p>
+<p>例：L=K/(s+a)，a、K&gt;0，闭环带宽为 a+K；只有 K&gt;a 时才有正的增益交越频率 $\sqrt{K^2-a^2}$。这个简单例子表明闭环有带宽，不一定存在有限正频率的开环增益交越。</p>
+<p><strong>自查</strong>：为什么计算−3 dB带宽时不能直接把闭环幅值与0.707比较？</p>
+</article><div class="page-footer"><a href="15-超前与滞后校正.html">← 上一课</a><a href="17-矩阵与状态向量.html">下一课 →</a></div></main>
+<nav class="sidebar" aria-label="课程总目录"><div class="sidebar-title">课程总目录</div><a class="nav-home" href="../index.html">首页 · 课程目录</a><div class="group-label">按学习阶段浏览</div><details class="nav-phase" open><summary><span class="phase-title">阶段 0｜经典控制基础与补桥</span><small>第 1–16 课：反馈、PID、稳定性与频域设计</small></summary><details class="nav-course"><summary><span class="course-number">第 1 课</span><span class="course-title">反馈控制与第一个 PD 控制器</span></summary><div class="nav-course-links"><a class="" href="01-反馈控制.html">讲解</a><a class="" href="../reviews/01-反馈控制.html">复习</a><a class="" href="../formulas/01-反馈控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 2 课</span><span class="course-title">二阶系统、阻尼比与超调量</span></summary><div class="nav-course-links"><a class="" href="02-二阶系统.html">讲解</a><a class="" href="../reviews/02-二阶系统.html">复习</a><a class="" href="../formulas/02-二阶系统.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 3 课</span><span class="course-title">拉普拉斯变换与传递函数</span></summary><div class="nav-course-links"><a class="" href="03-传递函数.html">讲解</a><a class="" href="../reviews/03-传递函数.html">复习</a><a class="" href="../formulas/03-传递函数.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 4 课</span><span class="course-title">极点、零点与系统稳定性</span></summary><div class="nav-course-links"><a class="" href="04-极点与零点.html">讲解</a><a class="" href="../reviews/04-极点与零点.html">复习</a><a class="" href="../formulas/04-极点与零点.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 5 课</span><span class="course-title">时间响应指标与 PD 控制器参数设计</span></summary><div class="nav-course-links"><a class="" href="05-PD参数设计.html">讲解</a><a class="" href="../reviews/05-PD参数设计.html">复习</a><a class="" href="../formulas/05-PD参数设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 6 课</span><span class="course-title">积分控制、稳态误差与积分饱和</span></summary><div class="nav-course-links"><a class="" href="06-积分控制.html">讲解</a><a class="" href="../reviews/06-积分控制.html">复习</a><a class="" href="../formulas/06-积分控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 7 课</span><span class="course-title">稳态误差与终值定理</span></summary><div class="nav-course-links"><a class="" href="07-稳态误差与终值定理.html">讲解</a><a class="" href="../reviews/07-稳态误差与终值定理.html">复习</a><a class="" href="../formulas/07-稳态误差与终值定理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 8 课</span><span class="course-title">PID 参数整定与积分抗饱和</span></summary><div class="nav-course-links"><a class="" href="08-PID整定与抗饱和.html">讲解</a><a class="" href="../reviews/08-PID整定与抗饱和.html">复习</a><a class="" href="../formulas/08-PID整定与抗饱和.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 9 课</span><span class="course-title">数字 PID 实现</span></summary><div class="nav-course-links"><a class="" href="09-数字PID实现.html">讲解</a><a class="" href="../reviews/09-数字PID实现.html">复习</a><a class="" href="../formulas/09-数字PID实现.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 10 课</span><span class="course-title">Routh稳定判据</span></summary><div class="nav-course-links"><a class="" href="10-Routh稳定判据.html">讲解</a><a class="" href="../reviews/10-Routh稳定判据.html">复习</a><a class="" href="../formulas/10-Routh稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 11 课</span><span class="course-title">根轨迹与增益设计</span></summary><div class="nav-course-links"><a class="" href="11-根轨迹与增益设计.html">讲解</a><a class="" href="../reviews/11-根轨迹与增益设计.html">复习</a><a class="" href="../formulas/11-根轨迹与增益设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 12 课</span><span class="course-title">频率响应与 Bode 图</span></summary><div class="nav-course-links"><a class="" href="12-频率响应与Bode图.html">讲解</a><a class="" href="../reviews/12-频率响应与Bode图.html">复习</a><a class="" href="../formulas/12-频率响应与Bode图.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 13 课</span><span class="course-title">Nyquist 稳定判据——沿着曲线判断闭环稳定性</span></summary><div class="nav-course-links"><a class="" href="13-Nyquist稳定判据.html">讲解</a><a class="" href="../reviews/13-Nyquist稳定判据.html">复习</a><a class="" href="../formulas/13-Nyquist稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 14 课</span><span class="course-title">增益裕度与相位裕度</span></summary><div class="nav-course-links"><a class="" href="14-增益裕度与相位裕度.html">讲解</a><a class="" href="../reviews/14-增益裕度与相位裕度.html">复习</a><a class="" href="../formulas/14-增益裕度与相位裕度.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 15 课</span><span class="course-title">超前与滞后校正</span></summary><div class="nav-course-links"><a class="" href="15-超前与滞后校正.html">讲解</a><a class="" href="../reviews/15-超前与滞后校正.html">复习</a><a class="" href="../formulas/15-超前与滞后校正.html">公式</a></div></details><details class="nav-course" open><summary><span class="course-number">第 16 课</span><span class="course-title">闭环带宽、延迟与鲁棒性</span></summary><div class="nav-course-links"><a class="active" href="16-闭环带宽与延迟鲁棒性.html">讲解</a><a class="" href="../reviews/16-闭环带宽与延迟鲁棒性.html">复习</a><a class="" href="../formulas/16-闭环带宽与延迟鲁棒性.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 1｜数学与模型衔接</span><small>第 17–19 课：矩阵、特征值、传递函数与状态空间</small></summary><details class="nav-course"><summary><span class="course-number">第 17 课</span><span class="course-title">矩阵与状态向量——现代控制的数学语言</span></summary><div class="nav-course-links"><a class="" href="17-矩阵与状态向量.html">讲解</a><a class="" href="../reviews/17-矩阵与状态向量.html">复习</a><a class="" href="../formulas/17-矩阵与状态向量.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 18 课</span><span class="course-title">特征值与系统动态</span></summary><div class="nav-course-links"><a class="" href="18-特征值与系统动态.html">讲解</a><a class="" href="../reviews/18-特征值与系统动态.html">复习</a><a class="" href="../formulas/18-特征值与系统动态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 19 课</span><span class="course-title">传递函数到状态空间</span></summary><div class="nav-course-links"><a class="" href="19-传递函数到状态空间.html">讲解</a><a class="" href="../reviews/19-传递函数到状态空间.html">复习</a><a class="" href="../formulas/19-传递函数到状态空间.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 2｜现代线性控制核心</span><small>第 20–31 课：状态响应、反馈、LQR、估计与离散综合</small></summary><details class="nav-course"><summary><span class="course-number">第 20 课</span><span class="course-title">状态空间基础</span></summary><div class="nav-course-links"><a class="" href="20-状态空间基础.html">讲解</a><a class="" href="../reviews/20-状态空间基础.html">复习</a><a class="" href="../formulas/20-状态空间基础.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 21 课</span><span class="course-title">相平面与状态轨迹</span></summary><div class="nav-course-links"><a class="" href="21-相平面与状态轨迹.html">讲解</a><a class="" href="../reviews/21-相平面与状态轨迹.html">复习</a><a class="" href="../formulas/21-相平面与状态轨迹.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 22 课</span><span class="course-title">连续系统离散化</span></summary><div class="nav-course-links"><a class="" href="22-连续系统离散化.html">讲解</a><a class="" href="../reviews/22-连续系统离散化.html">复习</a><a class="" href="../formulas/22-连续系统离散化.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 23 课</span><span class="course-title">可控性与可达状态</span></summary><div class="nav-course-links"><a class="" href="23-可控性与可达状态.html">讲解</a><a class="" href="../reviews/23-可控性与可达状态.html">复习</a><a class="" href="../formulas/23-可控性与可达状态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 24 课</span><span class="course-title">线性系统的Lyapunov稳定性</span></summary><div class="nav-course-links"><a class="" href="24-线性系统的Lyapunov稳定性.html">讲解</a><a class="" href="../reviews/24-线性系统的Lyapunov稳定性.html">复习</a><a class="" href="../formulas/24-线性系统的Lyapunov稳定性.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 25 课</span><span class="course-title">状态反馈与极点配置</span></summary><div class="nav-course-links"><a class="" href="25-状态反馈与极点配置.html">讲解</a><a class="" href="../reviews/25-状态反馈与极点配置.html">复习</a><a class="" href="../formulas/25-状态反馈与极点配置.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 26 课</span><span class="course-title">LQR最优状态反馈</span></summary><div class="nav-course-links"><a class="" href="26-LQR最优状态反馈.html">讲解</a><a class="" href="../reviews/26-LQR最优状态反馈.html">复习</a><a class="" href="../formulas/26-LQR最优状态反馈.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 27 课</span><span class="course-title">状态反馈的参考跟踪</span></summary><div class="nav-course-links"><a class="" href="27-状态反馈的参考跟踪.html">讲解</a><a class="" href="../reviews/27-状态反馈的参考跟踪.html">复习</a><a class="" href="../formulas/27-状态反馈的参考跟踪.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 28 课</span><span class="course-title">可观测性与输出信息</span></summary><div class="nav-course-links"><a class="" href="28-可观测性与输出信息.html">讲解</a><a class="" href="../reviews/28-可观测性与输出信息.html">复习</a><a class="" href="../formulas/28-可观测性与输出信息.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 29 课</span><span class="course-title">Luenberger状态观测器</span></summary><div class="nav-course-links"><a class="" href="29-Luenberger状态观测器.html">讲解</a><a class="" href="../reviews/29-Luenberger状态观测器.html">复习</a><a class="" href="../formulas/29-Luenberger状态观测器.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 30 课</span><span class="course-title">观测器反馈与分离原理</span></summary><div class="nav-course-links"><a class="" href="30-观测器反馈与分离原理.html">讲解</a><a class="" href="../reviews/30-观测器反馈与分离原理.html">复习</a><a class="" href="../formulas/30-观测器反馈与分离原理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 31 课</span><span class="course-title">离散状态反馈与综合设计</span></summary><div class="nav-course-links"><a class="" href="31-离散状态反馈与综合设计.html">讲解</a><a class="" href="../reviews/31-离散状态反馈与综合设计.html">复习</a><a class="" href="../formulas/31-离散状态反馈与综合设计.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 3｜非线性控制进阶</span><small>后续计划：Lyapunov、LaSalle 与非线性控制</small></summary><div class="phase-coming">该阶段课程将在学习进度推进后加入。</div></details><details class="nav-phase"><summary><span class="phase-title">阶段 4｜机器人与车辆实践</span><small>控制器综合设计、MATLAB 与 C++ 实现</small></summary><details class="nav-course"><summary><span class="course-number">第 32 课</span><span class="course-title">机器人控制器综合设计</span></summary><div class="nav-course-links"><a class="" href="32-机器人控制器综合设计.html">讲解</a><a class="" href="../reviews/32-机器人控制器综合设计.html">复习</a><a class="" href="../formulas/32-机器人控制器综合设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 33 课</span><span class="course-title">MATLAB 仿真与 C++ 控制循环</span></summary><div class="nav-course-links"><a class="" href="33-MATLAB仿真与C++控制循环.html">讲解</a><a class="" href="../reviews/33-MATLAB仿真与C++控制循环.html">复习</a><a class="" href="../formulas/33-MATLAB仿真与C++控制循环.html">公式</a></div></details></details></nav>
+</div><script data-demo-module="demo-core">
+/* 共享交互基础设施：课程页面按需加载各 demo 的普通脚本，兼容 file:// 离线打开。 */
+(function(){
+  'use strict';
+  const registry = new Map();
+  const DEG = 180/Math.PI;
+  function color(light,dark){return document.documentElement.dataset.theme==='dark'?dark:light;}
+  function poleRoots(J,Kp,Kd){
+    const d=Kd*Kd-4*J*Kp;
+    return d>=0 ? [{re:(-Kd+Math.sqrt(d))/(2*J),im:0},{re:(-Kd-Math.sqrt(d))/(2*J),im:0}]
+      : [{re:-Kd/(2*J),im:Math.sqrt(-d)/(2*J)},{re:-Kd/(2*J),im:-Math.sqrt(-d)/(2*J)}];
+  }
+  function solve(J,Kp,Kd){
+    let q=0,v=0,t=0;const dt=.008,out=[],qr=Math.PI/2;
+    const rhs=(a,b)=>[b,(Kp*(qr-a)-Kd*b)/J];
+    for(let i=0;i<=750;i++){
+      out.push([t,q*DEG]);
+      const a=rhs(q,v),b=rhs(q+dt*a[0]/2,v+dt*a[1]/2),c=rhs(q+dt*b[0]/2,v+dt*b[1]/2),d=rhs(q+dt*c[0],v+dt*c[1]);
+      q+=dt*(a[0]+2*b[0]+2*c[0]+d[0])/6;
+      v+=dt*(a[1]+2*b[1]+2*c[1]+d[1])/6;t+=dt;
+    }
+    return out;
+  }
+  function canvasReady(canvas){
+    const w=Math.max(canvas.clientWidth,260),h=canvas.clientHeight||245,dpr=window.devicePixelRatio||1;
+    canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+    const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return {ctx,w,h};
+  }
+  function mountPD(node, options){
+    const J0=Number(node.dataset.j||1),Kp0=Number(node.dataset.kp||16),Kd0=Number(node.dataset.kd??8);
+    node.innerHTML=`<p class="demo-title">${options.title}</p><p class="demo-note">理想单关节模型，目标 90°、初始角度及速度为零；本地浏览器计算。</p>
+      <div class="demo-controls">
+      <div class="control"><label>J（kg·m²）<output data-out="j"></output></label><input data-param="j" type="range" min="0.5" max="5" step="0.5"></div>
+      <div class="control"><label>Kp（N·m/rad）<output data-out="kp"></output></label><input data-param="kp" type="range" min="2" max="36" step="2"></div>
+      <div class="control"><label>Kd（N·m·s/rad）<output data-out="kd"></output></label><input data-param="kd" type="range" min="0" max="24" step="1"></div>
+      </div><canvas class="demo-canvas" role="img" aria-label="互动数学模型的曲线"></canvas>
+      <div class="demo-meta" aria-live="polite"></div><div class="demo-caption">${options.caption}</div>`;
+    const inputs={};node.querySelectorAll('input').forEach(el=>inputs[el.dataset.param]=el);
+    inputs.j.value=String(J0);inputs.kp.value=String(Kp0);inputs.kd.value=String(Kd0);
+    const canvas=node.querySelector('canvas'),meta=node.querySelector('.demo-meta');
+    function draw(){
+      const J=+inputs.j.value,Kp=+inputs.kp.value,Kd=+inputs.kd.value;
+      for(const name of ['j','kp','kd'])node.querySelector('[data-out="'+name+'"]').textContent=inputs[name].value;
+      const z=Kd/(2*Math.sqrt(J*Kp)),wn=Math.sqrt(Kp/J);
+      const details=options.render(canvas,J,Kp,Kd);
+      meta.replaceChildren();
+      for(const str of [`阻尼比 ζ = ${z.toFixed(3)}`,`ωn = ${wn.toFixed(3)} rad/s`,...details]){
+        const s=document.createElement('span');s.textContent=str;meta.appendChild(s);
+      }
+    }
+    Object.values(inputs).forEach(el=>el.addEventListener('input',draw));
+    window.addEventListener('robot-theme-changed',draw);
+    if(typeof ResizeObserver!=='undefined')new ResizeObserver(draw).observe(canvas);
+    else window.addEventListener('resize',draw);
+    draw();
+  }
+  window.NoteDemos={register(name,mount){
+    if(registry.has(name))throw new Error('重复的演示名称：'+name);
+    registry.set(name,mount);
+  }, utils:{color,poleRoots,solve,canvasReady,mountPD}};
+  function boot(){
+    document.querySelectorAll('.demo[data-demo]').forEach(node=>{
+      const name=node.dataset.demo;
+      try{
+        if(!registry.has(name))throw new Error(`模块「${name}」没有注册`);
+        registry.get(name)(node,window.NoteDemos.utils);
+      }catch(err){
+        node.textContent=`演示加载失败（${name}）：${err.message}。正文和公式仍可阅读。`;
+        node.classList.add('demo-error');console.error(err);
+      }
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+
+</script>
+<script data-demo-module="design">
+/* Lesson 11: closed-loop bandwidth and pure-delay phase loss */
+(function(){
+  'use strict';
+  window.NoteDemos.register('design',function(node,u){
+    node.classList.add('bandwidth-lab');
+    node.innerHTML=
+      '<p class="demo-title">交互实验 · 带宽与延迟余量</p>'+
+      '<p class="demo-note">模型：P(s)=1/(τs+1)，C(s)=K。调节参数，观察开环交越、相位裕度和无额外延迟时的闭环带宽。</p>'+
+      '<div class="demo-controls">'+
+      '<div class="control"><label>比例增益 K <output data-o="k"></output></label><input aria-label="比例增益 K" data-p="k" type="range" min="1.05" max="12" step="0.05" value="4"></div>'+
+      '<div class="control"><label>对象时间常数 τ <output data-o="tau"></output></label><input aria-label="对象时间常数 tau" data-p="tau" type="range" min="0.05" max="0.5" step="0.01" value="0.20"></div>'+
+      '<div class="control"><label>额外延迟 Td <output data-o="td"></output></label><input aria-label="额外纯延迟 Td" data-p="td" type="range" min="0" max="0.04" step="0.001" value="0.005"></div></div>'+
+      '<canvas class="demo-canvas" data-plot="magnitude" role="img" aria-label="带有0分贝线和增益交越位置的开环幅频曲线"></canvas>'+
+      '<canvas class="demo-canvas" data-plot="phase" role="img" aria-label="对比有无延迟的开环相位曲线和相位裕度"></canvas>'+
+      '<div class="demo-meta" aria-live="polite"></div><p class="demo-caption" data-status></p>';
+    const controls={};
+    node.querySelectorAll('input').forEach(function(el){controls[el.dataset.p]=el;});
+    const magCanvas=node.querySelector('[data-plot="magnitude"]');
+    const phaseCanvas=node.querySelector('[data-plot="phase"]');
+
+    function chart(canvas,title,ymin,ymax,ylabel){
+      const q=u.canvasReady(canvas),ctx=q.ctx,w=q.w,h=q.h;
+      ctx.clearRect(0,0,w,h);
+      const ink=u.color('#344050','#dbe5ef'),grid=u.color('#e3e8ed','#3b4758');
+      const r={x:54,y:34,w:w-72,h:h-72},xmin=-1,xmax=3;
+      const X=function(lw){return r.x+(lw-xmin)/(xmax-xmin)*r.w;};
+      const Y=function(v){return r.y+r.h-(v-ymin)/(ymax-ymin)*r.h;};
+      ctx.font='11px sans-serif';ctx.fillStyle=ink;ctx.textAlign='left';ctx.fillText(title,12,19);
+      ctx.strokeStyle=grid;ctx.lineWidth=1;
+      const intervals=ymin < -270 ? 4 : 5;
+      const ystep=(ymax-ymin)/intervals;
+      for(let i=0;i<=intervals;i++){
+        const v=ymin+i*ystep,py=Y(v);
+        ctx.beginPath();ctx.moveTo(r.x,py);ctx.lineTo(r.x+r.w,py);ctx.stroke();
+        ctx.fillStyle=ink;ctx.textAlign='right';ctx.fillText(v.toFixed(0),r.x-7,py+4);
+      }
+      [[-1,'0.1'],[0,'1'],[1,'10'],[2,'100'],[3,'1000']].forEach(function(t){
+        const px=X(t[0]);ctx.strokeStyle=grid;ctx.beginPath();ctx.moveTo(px,r.y);ctx.lineTo(px,r.y+r.h);ctx.stroke();
+        ctx.fillStyle=ink;ctx.textAlign='center';ctx.fillText(t[1],px,r.y+r.h+16);
+      });
+      ctx.fillStyle=ink;ctx.textAlign='center';ctx.fillText('角频率 ω (rad/s，对数刻度)',r.x+r.w/2,h-5);
+      function line(fn,color,dash){
+        ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();
+        ctx.strokeStyle=color;ctx.lineWidth=2;ctx.setLineDash(dash||[]);ctx.beginPath();
+        for(let i=0;i<=500;i++){
+          const lx=xmin+(xmax-xmin)*i/500,val=fn(Math.pow(10,lx));
+          if(i===0)ctx.moveTo(X(lx),Y(val));else ctx.lineTo(X(lx),Y(val));
+        }
+        ctx.stroke();ctx.restore();
+      }
+      function marker(omega,value,color,label){
+        if(!(omega>0)||!Number.isFinite(value))return;
+        const lx=Math.log10(omega),px=X(lx),py=Y(value);
+        ctx.save();ctx.strokeStyle=color;ctx.lineWidth=1.4;ctx.setLineDash([5,4]);
+        ctx.beginPath();ctx.moveTo(px,r.y);ctx.lineTo(px,r.y+r.h);ctx.stroke();ctx.setLineDash([]);
+        if(py>=r.y&&py<=r.y+r.h){ctx.fillStyle=color;ctx.beginPath();ctx.arc(px,py,4,0,2*Math.PI);ctx.fill();}
+        ctx.fillStyle=color;ctx.textAlign=px>r.x+r.w-55?'right':'left';
+        ctx.fillText(label,px+(ctx.textAlign==='right'?-4:4),r.y+13);ctx.restore();
+      }
+      return {ctx,r,X,Y,line,marker,ink,grid};
+    }
+    function draw(){
+      const K=+controls.k.value,tau=+controls.tau.value,Td=+controls.td.value;
+      node.querySelector('[data-o="k"]').textContent=K.toFixed(2);
+      node.querySelector('[data-o="tau"]').textContent=tau.toFixed(2)+' s';
+      node.querySelector('[data-o="td"]').textContent=(Td*1000).toFixed(0)+' ms';
+      const wgc=Math.sqrt(K*K-1)/tau;
+      const pm0=180-Math.atan(wgc*tau)*180/Math.PI;
+      const pm=pm0-wgc*Td*180/Math.PI;
+      const delayMargin=(pm0*Math.PI/180)/wgc;
+      const bw=(1+K)/tau;
+      const colors={base:'#3889cf',delay:'#d88b2b',cross:'#409e76',neutral:u.color('#7b8792','#8796a5')};
+      const mag=chart(magCanvas,'开环幅频图 · 幅值 (dB)',-60,30,'幅值 dB');
+      const phase=chart(phaseCanvas,'开环相频图 · 无延迟与含延迟',-720,0,'相位 deg');
+      mag.line(function(w){return 20*Math.log10(K)-10*Math.log10(1+(w*tau)*(w*tau));},colors.base);
+      mag.ctx.save();mag.ctx.strokeStyle=colors.neutral;mag.ctx.setLineDash([3,4]);
+      mag.ctx.beginPath();mag.ctx.moveTo(mag.r.x,mag.Y(0));mag.ctx.lineTo(mag.r.x+mag.r.w,mag.Y(0));mag.ctx.stroke();mag.ctx.restore();
+      mag.marker(wgc,0,colors.cross,'ωgc');
+      phase.line(function(w){return -Math.atan(w*tau)*180/Math.PI;},colors.base);
+      phase.line(function(w){return -Math.atan(w*tau)*180/Math.PI-w*Td*180/Math.PI;},colors.delay);
+      phase.ctx.save();phase.ctx.strokeStyle=colors.neutral;phase.ctx.setLineDash([3,4]);
+      phase.ctx.beginPath();phase.ctx.moveTo(phase.r.x,phase.Y(-180));phase.ctx.lineTo(phase.r.x+phase.r.w,phase.Y(-180));phase.ctx.stroke();phase.ctx.restore();
+      const phaseAt=-Math.atan(wgc*tau)*180/Math.PI-wgc*Td*180/Math.PI;
+      phase.marker(wgc,phaseAt,colors.cross,'PM @ ωgc');
+      const x=phase.X(Math.log10(wgc));
+      phase.ctx.save();phase.ctx.strokeStyle=colors.cross;phase.ctx.lineWidth=2;
+      phase.ctx.beginPath();phase.ctx.moveTo(x,phase.Y(phaseAt));phase.ctx.lineTo(x,phase.Y(-180));phase.ctx.stroke();phase.ctx.restore();
+      const rows=[
+        '增益交越 ωgc = '+wgc.toFixed(2)+' rad/s',
+        '无延迟 PM₀ = '+pm0.toFixed(1)+'°',
+        '当前延迟下 PM ≈ '+pm.toFixed(1)+'°',
+        '估算延迟余量 ≈ '+(delayMargin*1000).toFixed(1)+' ms',
+        '闭环带宽（无额外延迟）ωBW = '+bw.toFixed(2)+' rad/s'
+      ];
+      const meta=node.querySelector('.demo-meta');meta.replaceChildren();
+      rows.forEach(function(txt){const span=document.createElement('span');span.textContent=txt;meta.appendChild(span);});
+      node.querySelector('[data-status]').textContent=pm>15?
+        '当前模型仍有正相位余量。提高 K 会扩大无延迟闭环带宽，但通常也会降低可容忍的额外延迟。':
+        pm>0?'相位余量已经较小，继续增加延迟或模型误差可能把系统推近临界。':
+        '当前延迟已耗尽该简化模型的相位裕度；这是稳定边界的线性预测，实际系统还需结合完整模型与时域测试。';
+    }
+    Object.keys(controls).forEach(function(k){controls[k].addEventListener('input',draw);});
+    window.addEventListener('robot-theme-changed',draw);
+    if(typeof ResizeObserver!=='undefined')new ResizeObserver(draw).observe(node);
+    else window.addEventListener('resize',draw);
+    draw();
+  });
+})();
+
+
+
+</script></body></html>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 220" role="img" aria-labelledby="t d">
+<title id="t">离散控制循环</title><desc id="d">每拍读取目标与传感器，检查数据和时间，更新误差、速度和积分，计算控制命令，限幅后输出，并保存状态给下一拍使用。</desc>
+<defs><marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0L9 4.5 0 9z" fill="#dce7ef"/></marker></defs>
+<rect width="850" height="220" fill="#111a24"/>
+<g fill="#1b2b39" stroke="#526879" stroke-width="1.4">
+<rect x="22" y="65" width="130" height="65" rx="8"/><rect x="184" y="65" width="130" height="65" rx="8"/>
+<rect x="346" y="65" width="145" height="65" rx="8"/><rect x="523" y="65" width="130" height="65" rx="8"/>
+<rect x="685" y="65" width="140" height="65" rx="8"/>
+</g>
+<g fill="none" stroke="#dce7ef" stroke-width="2">
+<path d="M152 98H178" marker-end="url(#a)"/><path d="M314 98H340" marker-end="url(#a)"/>
+<path d="M491 98H517" marker-end="url(#a)"/><path d="M653 98H679" marker-end="url(#a)"/>
+<path d="M755 130V180H410V136" marker-end="url(#a)" stroke="#73c8e8"/>
+</g>
+<g fill="#f1f5f8" font-family="Arial,sans-serif" text-anchor="middle">
+<text x="87" y="91" font-size="16">读取目标与</text><text x="87" y="113" font-size="16">传感器</text>
+<text x="249" y="91" font-size="16">检查数据</text><text x="249" y="113" font-size="14" fill="#b6c6d2">计算本拍 dt</text>
+<text x="418" y="91" font-size="16">更新误差、速度</text><text x="418" y="113" font-size="16">积分与滤波</text>
+<text x="588" y="91" font-size="16">PID 计算</text><text x="588" y="113" font-size="14" fill="#b6c6d2">限幅与抗饱和</text>
+<text x="755" y="91" font-size="16">输出执行器</text><text x="583" y="205" font-size="14" fill="#73c8e8">保存历史状态，进入下一拍</text>
+</g></svg>

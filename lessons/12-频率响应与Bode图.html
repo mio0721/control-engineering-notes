@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
+<title>第 12 课 · 频率响应与 Bode 图 · 课程讲解｜机器人控制理论笔记</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('robot-note-theme')||'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
+<link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../courses/12-频率响应与Bode图/demos/design.css">
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true,packages:{'[+]':['base','ams']}},svg:{fontCache:'local'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
+<script defer src="../assets/mathjax-tex-svg.js"></script><script defer src="../assets/theme.js"></script>
+</head><body>
+<header class="mast"><div class="mast-inner"><a class="brand" href="../index.html">机器人控制理论笔记 <small>持续更新 · 离线 HTML</small></a><div class="top-actions"><span class="top-indicator">已整理 33 课</span><button id="themeToggle" type="button" class="theme-toggle" aria-label="切换日间与夜间模式" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">夜间模式</span></button></div></div></header>
+<div class="layout">
+<aside class="toc" aria-label="本章目录"><div class="toc-label">本章目录</div><a class="h2" href="#section-1">一、先从一个机器人运动问题开始</a><a class="h2" href="#section-2">二、频率到底是什么？</a><a class="h3" href="#section-3">2.1 普通频率与角频率</a><a class="h2" href="#section-4">三、频率响应最重要的两个现象</a><a class="h3" href="#section-5">3.1 幅值增益：摆动幅度变化多少？</a><a class="h3" href="#section-6">3.2 相位差：输出比输入晚多少？</a><a class="h2" href="#section-7">一个正弦波经过系统后，每个数字怎样算出来？</a><a class="h3" href="#section-8">先预测，再展开核对</a><a class="h2" href="#section-9">四、交互实验一：改变频率，观察输出</a><a class="h3" href="#section-10">建议按这个顺序观察</a><a class="h2" href="#section-11">五、为什么频率响应和传递函数有关？</a><a class="h3" href="#section-12">5.1 从一阶微分方程开始</a><a class="h3" href="#section-13">5.2 为什么令 $s=j\omega$？</a><a class="h2" href="#section-14">六、复数为什么能表示幅值和相位？</a><a class="h3" href="#section-15">6.1 计算幅值</a><a class="h3" href="#section-16">6.2 计算相位</a><a class="h3" href="#section-17">6.3 代入三个频率</a><a class="h2" href="#section-18">七、Bode 图到底是什么？</a><a class="h3" href="#section-19">7.1 为什么用对数频率？</a><a class="h3" href="#section-20">7.2 为什么换成 dB？</a><a class="h2" href="#section-21">八、交互实验二：观察 Bode 图</a><a class="h3" href="#section-22">8.1 怎样读两张图？</a><a class="h3" href="#section-23">8.2 什么是截止频率？</a><a class="h3" href="#section-24">8.3 改变时间常数</a><a class="h2" href="#section-25">九、为什么对控制工程师重要？</a><a class="h3" href="#section-26">9.1 机器人为什么跟不上快速目标？</a><a class="h3" href="#section-27">9.2 为什么不能无限提高增益？</a><a class="h3" href="#section-28">9.3 与微分滤波的联系</a><a class="h2" href="#section-29">十、MATLAB 实验：复现演示</a><a class="h3" href="#section-30">实验 A：正弦输入与输出</a><a class="h3" href="#section-31">实验 B：自己绘制 Bode 图</a><a class="h2" href="#section-32">十一、把本课知识连接起来</a><a class="h2" href="#section-33">十二、第 12 课课后练习</a><a class="h3" href="#section-34">问题 1：截止频率计算</a><a class="h3" href="#section-35">问题 2：幅值和相位的理解</a><a class="h3" href="#section-36">问题 3：时间常数与 Bode 图</a><a class="h3" href="#section-37">问题 4：机器人控制应用</a><a class="h2" href="#section-38">课程衔接与条件检查</a><a class="h3" href="#section-39">dB、频率单位和稳态正弦的限制</a></aside>
+<main class="main" id="content"><div class="eyebrow">第 12 课 / 课程讲解</div><div class="chapter-tabs"><a class="active" href="12-频率响应与Bode图.html">课程讲解</a><a class="" href="../reviews/12-频率响应与Bode图.html">复习笔记</a><a class="" href="../formulas/12-频率响应与Bode图.html">公式手册</a></div><article class="prose"><h1>第 12 课：频率响应与 Bode 图</h1>
+<blockquote>
+<p>第 3 周 · 第 1 节｜先观察物理现象，再用两个交互实验理解，接着推导公式，最后用 MATLAB 验证。</p>
+</blockquote>
+<p>本页按你提供的“第 12 课（重新讲解）”重建。四道练习尚未提交批改。</p>
+<p>学习目标：理解机器人为什么能跟踪慢目标却跟不上快目标；理解幅值增益、相位差、$s=j\omega$ 的依据，以及 Bode 图的读法。</p>
+<h2 id="section-1">一、先从一个机器人运动问题开始</h2>
+<p>假设控制单关节机械臂持续往复摆动。以前我们研究从 0° 转到 90° 后保持，现在目标角度本身一直在变化。</p>
+<table>
+<thead>
+<tr>
+<th>任务</th>
+<th>目标</th>
+<th>评价内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>固定角度</td>
+<td>从 0° 到 90° 后保持</td>
+<td>上升时间、超调量、调节时间</td>
+</tr>
+<tr>
+<td>周期运动</td>
+<td>持续往复摆动</td>
+<td>实际摆幅够不够、运动是否落后</td>
+</tr>
+</tbody>
+</table>
+<p>每 5 秒摆动一次，可能容易完成；每 0.05 秒摆动一次，还能准确跟踪吗？机械臂有惯性，电机有力矩、速度与带宽限制，传感器、通信和计算也可能引入延迟。</p>
+<p>于是研究：<strong>面对不同变化频率的输入，输出会怎样改变？</strong> 这就是频率响应（Frequency Response）。</p>
+<h2 id="section-2">二、频率到底是什么？</h2>
+<p>先看正弦目标：</p>
+<p>$$
+\boxed{q_d(t)=A\sin(\omega t)}
+$$</p>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>意义</th>
+<th>单位</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$q_d(t)$</td>
+<td>目标关节角度</td>
+<td>rad</td>
+</tr>
+<tr>
+<td>$A$</td>
+<td>摆动幅值</td>
+<td>rad</td>
+</tr>
+<tr>
+<td>$\omega$</td>
+<td>角频率</td>
+<td>rad/s</td>
+</tr>
+<tr>
+<td>$t$</td>
+<td>时间</td>
+<td>s</td>
+</tr>
+</tbody>
+</table>
+<p>例如 $q_d(t)=0.5\sin(2\pi t)$：目标在 −0.5 rad 到 +0.5 rad 之间变化，每秒完成一次完整往复。幅值为 0.5 rad，峰峰值为 1 rad，两者不同。</p>
+<h3 id="section-3">2.1 普通频率与角频率</h3>
+<p>$f$ 的单位为 Hz，表示每秒完成多少个周期；$\omega$ 的单位为 rad/s，表示相位每秒变化多少弧度。一个周期对应 $2\pi$，因此：</p>
+<p>$$
+\boxed{\omega=2\pi f},\qquad
+\boxed{T=\frac1f=\frac{2\pi}{\omega}}
+$$</p>
+<table>
+<thead>
+<tr>
+<th>普通频率</th>
+<th>周期</th>
+<th>运动特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.2 Hz</td>
+<td>5 s</td>
+<td>缓慢往复</td>
+</tr>
+<tr>
+<td>1 Hz</td>
+<td>1 s</td>
+<td>每秒一次</td>
+</tr>
+<tr>
+<td>10 Hz</td>
+<td>0.1 s</td>
+<td>快速往复</td>
+</tr>
+<tr>
+<td>20 Hz</td>
+<td>0.05 s</td>
+<td>非常快速</td>
+</tr>
+</tbody>
+</table>
+<p>频率不是关节的瞬时角速度。对目标轨迹求导：</p>
+<p>$$
+\dot q_d=A\omega\cos(\omega t),\qquad
+\ddot q_d=-A\omega^2\sin(\omega t)
+$$</p>
+<p>摆幅相同时，频率提高 10 倍，需要的最大角速度提高 10 倍，最大角加速度提高 100 倍。这也是快速往复对执行器要求更高的原因。</p>
+<h2 id="section-4">三、频率响应最重要的两个现象</h2>
+<p>给稳定的线性时不变系统输入 $u(t)=A\sin(\omega t)$，暂态结束后的输出仍为同频正弦：</p>
+<p>$$
+\boxed{y_{ss}(t)=B\sin(\omega t+\phi)}
+$$</p>
+<p>这里讨论正弦稳态。出现饱和等非线性时，实际波形可能畸变，不能简单假设只改变幅值与相位。</p>
+<h3 id="section-5">3.1 幅值增益：摆动幅度变化多少？</h3>
+<p>$$
+\boxed{M(\omega)=\frac BA}
+$$</p>
+<p>输入幅值为 1 rad、输出幅值为 0.5 rad，增益就是 0.5，实际摆幅只有目标的一半。同一线性模型、同一频率下，输入幅值变为 2 rad，输出幅值就变为 1 rad。</p>
+<h3 id="section-6">3.2 相位差：输出比输入晚多少？</h3>
+<p>$$
+\boxed{\phi=\text{输出相位}-\text{输入相位}}
+$$</p>
+<p>$\phi=-90^\circ$ 表示输出落后四分之一个周期，称为相位滞后（Phase Lag）。在指定频率下，负相位可以换成等效时间偏移：</p>
+<p>$$
+\Delta t=-\frac{\phi}{\omega}\qquad(\phi\text{ 用弧度})
+$$</p>
+<p>相同的 −45° 在不同频率对应不同时间，不是“落后 45 秒”；频率相关的相位也不能一概理解成固定纯延迟。</p>
+<p>记住：幅值增益衡量“跟得有多大”，相位差衡量“跟得有多晚”。</p>
+<h2 id="section-7">一个正弦波经过系统后，每个数字怎样算出来？</h2>
+<p>选一个没有额外增益的一阶低通：</p>
+<p>$$G(s)=\frac1{s+1},\qquad u(t)=\sin(\omega t).$$</p>
+<p>其稳态正弦的幅值比例与相位滞后为：</p>
+<p>$$
+|G(j\omega)|=\frac1{\sqrt{1+\omega^2}},\qquad
+\phi(\omega)=-\arctan\omega.
+$$</p>
+<p>取ω=1 rad/s，则幅值变成约0.707，相位为−45°，在本频率对应约0.785 s 的滞后；输入周期是2π s。相位不是固定时间延迟，同一个一阶模型在其他频率的“等效滞后时间”不同。</p>
+<p>$$
+y_{ss}(t)=0.707\sin(t-\pi/4),\qquad
+20\log_{10}(0.707)\approx-3.01\ \mathrm{dB}.
+$$</p>
+<p>图中只画稳态正弦，已经去掉初态产生的瞬态。若从零初态刚启动，还需叠加一个衰减指数项，不能要求一开始就贴在稳态曲线上。</p>
+<p><img alt="本课数值例子的定量对照图" src="../courses/12-频率响应与Bode图/media/worked-example-dark.svg"/></p>
+<p><strong>读图与操作</strong>：先在正弦演示中改变频率，看振幅和相位，再在 Bode 演示中找同一个频率的读数。</p>
+<p><strong>使用条件</strong>：稳定一阶线性对象；正弦稳态解释建立在瞬态已衰减的基础上。</p>
+<h3 id="section-8">先预测，再展开核对</h3>
+<p>ω=10 rad/s 时幅值比例与相位大约是多少？</p>
+<details><summary>查看思路与答案</summary>
+<p>幅值1/√101≈0.0995，相位约−84.29°；约−20.04 dB，频率越高越难通过。</p>
+</details>
+<h2 id="section-9">四、交互实验一：改变频率，观察输出</h2>
+<p>先研究一阶系统：</p>
+<p>$$
+\boxed{G(s)=\frac1{0.1s+1}}
+$$</p>
+<p>它可以近似描述某些一阶滞后过程，例如简化的电机速度响应。这里借助简化机械臂示意幅值和相位，不代表完整机械臂动力学。</p>
+<div class="demo" data-demo="design" data-mode="wave"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>
+<h3 id="section-10">建议按这个顺序观察</h3>
+<ol>
+<li>选 <strong>1 rad/s</strong>：输入和输出几乎重合。</li>
+<li>选 <strong>10 rad/s</strong>：输出幅值减小，峰值后移。</li>
+<li>选 <strong>100 rad/s</strong>：输出幅值很小，相位接近落后四分之一周期。</li>
+<li>拖动观察时刻，看同一时刻两条简化机械臂的位置。</li>
+</ol>
+<p>蓝线表示目标输入，橙线表示稳态输出。机械臂使用 45° 的输入摆幅，只作模型示意。</p>
+<p>横轴为周期位置 $t/T$，不是固定长度的真实时间。各频率都显示两个周期，便于比较波形；真实周期 $T=2\pi/\omega$ 会随频率变化。</p>
+<h2 id="section-11">五、为什么频率响应和传递函数有关？</h2>
+<h3 id="section-12">5.1 从一阶微分方程开始</h3>
+<p>$$
+\boxed{\tau\dot y(t)+y(t)=u(t)}
+$$</p>
+<p>$\tau$ 是时间常数，单位秒，不是之前表示力矩的符号。输出与输入有差距时，会逐渐向输入调整，不能瞬间完成变化。</p>
+<p>零初始条件下作拉普拉斯变换：</p>
+<p>$$
+\begin{aligned}
+\tau sY(s)+Y(s)&amp;=U(s)\\
+(\tau s+1)Y(s)&amp;=U(s)\\
+G(s)=\frac{Y(s)}{U(s)}&amp;=\frac1{\tau s+1}
+\end{aligned}
+$$</p>
+<p>令 $\tau=0.1\,\mathrm{s}$，就是刚才的演示模型。</p>
+<h3 id="section-13">5.2 为什么令 $s=j\omega$？</h3>
+<p>$j$ 为虚数单位，满足 $j^2=-1$。欧拉公式说明：</p>
+<p>$$
+e^{j\omega t}=\cos(\omega t)+j\sin(\omega t)
+$$</p>
+<p>可以先分析复指数，再取实部或虚部得到对应的正弦响应。它有一个特殊性质：</p>
+<p>$$
+\frac{d}{dt}e^{j\omega t}=j\omega e^{j\omega t}
+$$</p>
+<p>求导相当于乘 $j\omega$，不会改变基本形式。</p>
+<p>令输入为 $e^{j\omega t}$，尝试寻找稳态输出 $He^{j\omega t}$，其中 $H$ 是复数。代回原方程：</p>
+<p>$$
+\begin{aligned}
+\tau(j\omega He^{j\omega t})+He^{j\omega t}&amp;=e^{j\omega t}\\
+(1+j\omega\tau)H&amp;=1\\
+H&amp;=\frac1{1+j\omega\tau}
+\end{aligned}
+$$</p>
+<p>恰好等于：</p>
+<p>$$
+\boxed{G(j\omega)=G(s)\big|_{s=j\omega}}
+$$</p>
+<p>所以这不是随意替换符号，而是利用复指数在微分运算下的特殊性质。本课稳定的一阶系统暂态会衰减，最终留下正弦稳态响应。</p>
+<h2 id="section-14">六、复数为什么能表示幅值和相位？</h2>
+<p>复数的模表示大小，辐角表示方向。例如 $1+j$ 对应复平面点 $(1,1)$，长度为 $\sqrt2$，角度为 45°。</p>
+<p>对于 $z=a+jb$：</p>
+<p>$$
+|z|=\sqrt{a^2+b^2},\qquad
+\arg z=\operatorname{atan2}(b,a)
+$$</p>
+<p>将 $G(j\omega)$ 写成 $|G(j\omega)|e^{j\phi}$，乘到输入上：</p>
+<p>$$
+G(j\omega)Ae^{j\omega t}
+=A|G(j\omega)|e^{j(\omega t+\phi)}
+$$</p>
+<p>取虚部，得到 $A|G(j\omega)|\sin(\omega t+\phi)$。模变成幅值增益，辐角变成相位差。</p>
+<h3 id="section-15">6.1 计算幅值</h3>
+<p>分母的模为 $\sqrt{1+(\omega\tau)^2}$，所以：</p>
+<p>$$
+\boxed{|G(j\omega)|=\frac1{\sqrt{1+(\omega\tau)^2}}}
+$$</p>
+<h3 id="section-16">6.2 计算相位</h3>
+<p>分母 $1+j\omega\tau$ 的相位为 $\arctan(\omega\tau)$，取倒数后相位变负：</p>
+<p>$$
+\boxed{\phi(\omega)=-\arctan(\omega\tau)}
+$$</p>
+<p>反正切返回弧度时，要乘 $180/\pi$ 才变成角度。</p>
+<h3 id="section-17">6.3 代入三个频率</h3>
+<p>令 $\tau=0.1\,\mathrm{s}$：</p>
+<table>
+<thead>
+<tr>
+<th>角频率</th>
+<th>幅值增益</th>
+<th>相位差</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 rad/s</td>
+<td>0.995</td>
+<td>−5.71°</td>
+</tr>
+<tr>
+<td>10 rad/s</td>
+<td>0.707</td>
+<td>−45°</td>
+</tr>
+<tr>
+<td>100 rad/s</td>
+<td>0.0995</td>
+<td>−84.29°</td>
+</tr>
+</tbody>
+</table>
+<p>这与交互实验一致。在这个模型中，频率越高，幅值越小，滞后越明显。但并非所有系统都单调变化，例如欠阻尼二阶系统可能有共振峰，在部分频率放大输入。</p>
+<h2 id="section-18">七、Bode 图到底是什么？</h2>
+<p>对 0.1～1000 rad/s 等范围内的很多频率分别计算幅值和相位，再绘成曲线，就是 Bode 图（波特图）。</p>
+<table>
+<thead>
+<tr>
+<th>图</th>
+<th>横轴</th>
+<th>纵轴</th>
+<th>回答的问题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>幅频曲线</td>
+<td>频率，通常取对数刻度</td>
+<td>幅值增益，常用 dB</td>
+<td>放大或衰减多少？</td>
+</tr>
+<tr>
+<td>相频曲线</td>
+<td>相同频率刻度</td>
+<td>相位差，常用角度</td>
+<td>超前或滞后多少？</td>
+</tr>
+</tbody>
+</table>
+<h3 id="section-19">7.1 为什么用对数频率？</h3>
+<p>0.1、1、10、100、1000 放在线性坐标里，低频会挤在一起。对数坐标让每次频率提高 10 倍的间距相同，方便跨数量级比较。</p>
+<p>从 1 到 10 与从 10 到 100 占相同宽度；向右移动相同距离，不表示频率增加相同数值。</p>
+<h3 id="section-20">7.2 为什么换成 dB？</h3>
+<p>$$
+\boxed{L(\omega)=20\log_{10}|G(j\omega)|}
+$$</p>
+<table>
+<thead>
+<tr>
+<th>幅值增益</th>
+<th>dB</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10</td>
+<td>+20</td>
+<td>幅值为输入 10 倍</td>
+</tr>
+<tr>
+<td>2</td>
+<td>+6.02</td>
+<td>幅值约为输入 2 倍</td>
+</tr>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>幅值不变</td>
+</tr>
+<tr>
+<td>0.5</td>
+<td>−6.02</td>
+<td>幅值减半</td>
+</tr>
+<tr>
+<td>0.1</td>
+<td>−20</td>
+<td>幅值为输入十分之一</td>
+</tr>
+</tbody>
+</table>
+<p><strong>0 dB 不是没有输出，而是幅值比为 1。</strong> 20 倍对数用于幅值比；功率比常用 10 倍对数，不要混用。对数还会将串联增益的乘法变成 dB 加法，方便后续分析。</p>
+<h2 id="section-21">八、交互实验二：观察 Bode 图</h2>
+<p>同时调整输入频率与时间常数，观察当前工作点和截止频率：</p>
+<div class="demo" data-demo="design" data-mode="bode"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>
+<h3 id="section-22">8.1 怎样读两张图？</h3>
+<p>先设 $\tau=0.1\,\mathrm{s}$，选定横轴频率，再找两张曲线对应点：</p>
+<ul>
+<li>幅频图低频接近 0 dB，频率提高后下降。</li>
+<li>相频图低频接近 0°，频率提高后趋向 −90°。</li>
+<li>橙色标记为当前频率，绿色虚线为截止角频率。</li>
+</ul>
+<p>很高频率下，$M\approx1/(\omega\tau)$。频率提高 10 倍，幅值约变成十分之一。高频渐近斜率为 −20 dB/dec，即每十倍频程下降 20 dB。</p>
+<h3 id="section-23">8.2 什么是截止频率？</h3>
+<p>对于本课一阶低通：</p>
+<p>$$
+\boxed{\omega_c=\frac1\tau},\qquad
+\boxed{f_c=\frac1{2\pi\tau}}
+$$</p>
+<p>在这个频率下：</p>
+<p>$$
+\begin{aligned}
+|G(j\omega_c)|&amp;=\frac1{\sqrt2}\approx0.707\\
+20\log_{10}|G(j\omega_c)|&amp;\approx-3.01\,\mathrm{dB}\\
+\phi(\omega_c)&amp;=-45^\circ
+\end{aligned}
+$$</p>
+<p>即稳态幅值降到低频幅值约 70.7% 时的频率。超过它仍可能有输出，也不表示系统马上失稳。</p>
+<p>若低频增益不是 1，−3 dB 通常是相对低频平台下降 3 dB，不一定对应绝对 −3 dB；复杂模型需结合具体带宽定义。</p>
+<h3 id="section-24">8.3 改变时间常数</h3>
+<p>把 $\tau$ 从 0.1 s 调到 0.5 s，截止角频率从 10 rad/s 降到 2 rad/s。曲线向低频移动，在更低频率就出现明显衰减与滞后。</p>
+<p>同样观察 10 rad/s：原来 $\omega\tau=1$，现在为 5，幅值更小，负相位绝对值更大。对这种一阶模型，时间常数越大，响应越慢，截止频率越低。</p>
+<h2 id="section-25">九、为什么对控制工程师重要？</h2>
+<h3 id="section-26">9.1 机器人为什么跟不上快速目标？</h3>
+<p>对于 $q_d(t)=0.5\sin(\omega t)$，低频时有较充裕的调整时间；高频时可能出现衰减和滞后。Bode 图能量化这些现象。</p>
+<p>判断位置跟踪能力，应分析<strong>从目标位置到实际位置的闭环传递函数</strong>，不能任取电机模型来判断整个系统。</p>
+<h3 id="section-27">9.2 为什么不能无限提高增益？</h3>
+<p>增大反馈增益有时能加快响应，但电机力矩有限，系统存在延迟和模型误差，传感器有噪声。过高增益可能降低稳定裕度，造成振荡甚至失稳。</p>
+<p>速度、稳定性、噪声与执行器限制需要一起考虑。后续会学习增益裕度与相位裕度，本课不把截止频率当成稳定判据。</p>
+<h3 id="section-28">9.3 与微分滤波的联系</h3>
+<p>第 9 课学过：</p>
+<p>$$
+v_k^f=\alpha v_{k-1}^f+(1-\alpha)v_k^{raw}
+$$</p>
+<p>离散低通倾向于保留缓慢变化，衰减部分高频变化。高频噪声会减弱，但真实速度的快速变化也含高频成分，因此滤波过强会滞后。这是噪声抑制与响应速度的权衡。</p>
+<p>连续一阶低通用于建立直觉，在接近采样频率时，不能认为它与离散滤波的频率响应完全相同。</p>
+<table>
+<thead>
+<tr>
+<th>分析方法</th>
+<th>典型输入</th>
+<th>观察内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>时间响应</td>
+<td>阶跃</td>
+<td>上升时间、超调量、调节时间</td>
+</tr>
+<tr>
+<td>频率响应</td>
+<td>不同频率正弦</td>
+<td>幅值增益、相位差、带宽</td>
+</tr>
+</tbody>
+</table>
+<p>它们从不同角度分析同一个动态系统。</p>
+<h2 id="section-29">十、MATLAB 实验：复现演示</h2>
+<h3 id="section-30">实验 A：正弦输入与输出</h3>
+<p>使用 $0.1\dot y+y=u$，输入 $u(t)=\sin(10t)$。不依赖 Control System Toolbox。</p>
+<div class="code-panel"><div class="code-label">MATLAB</div><pre class="code-highlight"><code><span class="nb">clc</span><span class="p">;</span>
+<span class="nb">clear</span><span class="p">;</span>
+<span class="n">close</span><span class="w"> </span><span class="s">all</span><span class="p">;</span>
+<span class="n">tau</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.1</span><span class="p">;</span>
+<span class="n">omega</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
+<span class="n">tspan</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="mf">0.001</span><span class="p">:</span><span class="mi">3</span><span class="p">;</span>
+
+<span class="c">% tau*dy/dt+y=u，所以 dy/dt=(u-y)/tau</span>
+<span class="n">f</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">@(</span><span class="n">t</span><span class="p">,</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="nb">sin</span><span class="p">(</span><span class="n">omega</span><span class="o">*</span><span class="n">t</span><span class="p">)</span><span class="o">-</span><span class="n">y</span><span class="p">)</span><span class="o">/</span><span class="n">tau</span><span class="p">;</span>
+<span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">y</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">ode45</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">tspan</span><span class="p">,</span><span class="mi">0</span><span class="p">);</span>
+<span class="n">u</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">sin</span><span class="p">(</span><span class="n">omega</span><span class="o">*</span><span class="n">t</span><span class="p">);</span>
+
+<span class="n">M</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">1</span><span class="o">/</span><span class="nb">sqrt</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="p">(</span><span class="n">omega</span><span class="o">*</span><span class="n">tau</span><span class="p">)</span><span class="o">^</span><span class="mi">2</span><span class="p">);</span>
+<span class="n">phi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="o">-</span><span class="nb">atan</span><span class="p">(</span><span class="n">omega</span><span class="o">*</span><span class="n">tau</span><span class="p">);</span>
+<span class="n">y_ss</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">M</span><span class="o">*</span><span class="nb">sin</span><span class="p">(</span><span class="n">omega</span><span class="o">*</span><span class="n">t</span><span class="o">+</span><span class="n">phi</span><span class="p">);</span>
+
+<span class="nb">figure</span><span class="p">;</span>
+<span class="nb">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">u</span><span class="p">,</span><span class="s">'b'</span><span class="p">,</span><span class="s">'LineWidth'</span><span class="p">,</span><span class="mf">1.5</span><span class="p">);</span>
+<span class="n">hold</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="s">'r'</span><span class="p">,</span><span class="s">'LineWidth'</span><span class="p">,</span><span class="mf">1.5</span><span class="p">);</span>
+<span class="nb">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="n">y_ss</span><span class="p">,</span><span class="s">'k--'</span><span class="p">,</span><span class="s">'LineWidth'</span><span class="p">,</span><span class="mf">1.2</span><span class="p">);</span>
+<span class="nb">xlabel</span><span class="p">(</span><span class="s">'时间 (s)'</span><span class="p">);</span>
+<span class="nb">ylabel</span><span class="p">(</span><span class="s">'信号幅值'</span><span class="p">);</span>
+<span class="nb">title</span><span class="p">(</span><span class="s">'一阶系统的正弦响应'</span><span class="p">);</span>
+<span class="nb">legend</span><span class="p">(</span><span class="s">'输入'</span><span class="p">,</span><span class="s">'实际响应'</span><span class="p">,</span><span class="s">'理论稳态响应'</span><span class="p">);</span>
+<span class="n">grid</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">fprintf</span><span class="p">(</span><span class="s">'理论幅值增益 = %.3f\n'</span><span class="p">,</span><span class="n">M</span><span class="p">);</span>
+<span class="nb">fprintf</span><span class="p">(</span><span class="s">'理论相位差 = %.2f deg\n'</span><span class="p">,</span><span class="n">phi</span><span class="o">*</span><span class="mi">180</span><span class="o">/</span><span class="nb">pi</span><span class="p">);</span></code></pre></div>
+<p>理论结果：</p>
+<p>$$
+M=\frac1{\sqrt{1+(10\times0.1)^2}}\approx0.707,\qquad
+\phi=-\arctan(1)=-45^\circ
+$$</p>
+<p>因此：</p>
+<p>$$
+\boxed{y_{ss}(t)=0.707\sin(10t-\pi/4)}
+$$</p>
+<p>蓝色输入幅值是 1，稳态红色输出约为 0.707，峰值更晚。开始时红线与黑色虚线不同，因为实际响应还包含暂态；暂态衰减后逐渐重合。</p>
+<p>把 $\omega$ 分别改为 1、10、100。观察稳态前，应给暂态足够时间衰减，再放大稳态区域。</p>
+<h3 id="section-31">实验 B：自己绘制 Bode 图</h3>
+<div class="code-panel"><div class="code-label">MATLAB</div><pre class="code-highlight"><code><span class="nb">clc</span><span class="p">;</span>
+<span class="nb">clear</span><span class="p">;</span>
+<span class="n">close</span><span class="w"> </span><span class="s">all</span><span class="p">;</span>
+<span class="n">tau</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mf">0.1</span><span class="p">;</span>
+<span class="n">omega</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">logspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">500</span><span class="p">);</span>
+<span class="n">M</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">./</span><span class="w"> </span><span class="nb">sqrt</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="p">(</span><span class="n">omega</span><span class="o">*</span><span class="n">tau</span><span class="p">)</span><span class="o">.^</span><span class="mi">2</span><span class="p">);</span>
+<span class="n">M_dB</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">20</span><span class="o">*</span><span class="nb">log10</span><span class="p">(</span><span class="n">M</span><span class="p">);</span>
+<span class="n">phi</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="o">-</span><span class="nb">atan</span><span class="p">(</span><span class="n">omega</span><span class="o">*</span><span class="n">tau</span><span class="p">)</span><span class="o">*</span><span class="mi">180</span><span class="o">/</span><span class="nb">pi</span><span class="p">;</span>
+<span class="n">omega_c</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">1</span><span class="o">/</span><span class="n">tau</span><span class="p">;</span>
+
+<span class="nb">figure</span><span class="p">;</span>
+<span class="nb">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span>
+<span class="nb">semilogx</span><span class="p">(</span><span class="n">omega</span><span class="p">,</span><span class="n">M_dB</span><span class="p">,</span><span class="s">'LineWidth'</span><span class="p">,</span><span class="mf">1.5</span><span class="p">);</span>
+<span class="n">hold</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">xline</span><span class="p">(</span><span class="n">omega_c</span><span class="p">,</span><span class="s">'r--'</span><span class="p">,</span><span class="s">'截止角频率'</span><span class="p">);</span>
+<span class="n">grid</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">ylabel</span><span class="p">(</span><span class="s">'幅值 (dB)'</span><span class="p">);</span>
+<span class="nb">title</span><span class="p">(</span><span class="s">'一阶低通系统 Bode 图'</span><span class="p">);</span>
+
+<span class="nb">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">);</span>
+<span class="nb">semilogx</span><span class="p">(</span><span class="n">omega</span><span class="p">,</span><span class="n">phi</span><span class="p">,</span><span class="s">'LineWidth'</span><span class="p">,</span><span class="mf">1.5</span><span class="p">);</span>
+<span class="n">hold</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">xline</span><span class="p">(</span><span class="n">omega_c</span><span class="p">,</span><span class="s">'r--'</span><span class="p">,</span><span class="s">'截止角频率'</span><span class="p">);</span>
+<span class="n">grid</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">xlabel</span><span class="p">(</span><span class="s">'角频率 (rad/s)'</span><span class="p">);</span>
+<span class="nb">ylabel</span><span class="p">(</span><span class="s">'相位 (deg)'</span><span class="p">);</span></code></pre></div>
+<p><code>logspace(-1,3,500)</code> 在 $10^{-1}$ 到 $10^3$ 生成 500 个按对数均匀分布的频率；<code>semilogx</code> 表示对数横轴。</p>
+<p><code>.^</code> 与 <code>./</code> 是逐元素运算，因为要分别处理向量中的每个频率。<code>atan</code> 返回弧度，乘 <code>180/pi</code> 变成角度。</p>
+<p>安装 Control System Toolbox 后可简化为：</p>
+<div class="code-panel"><div class="code-label">MATLAB</div><pre class="code-highlight"><code><span class="n">s</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">tf</span><span class="p">(</span><span class="s">'s'</span><span class="p">);</span>
+<span class="n">G</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="mf">0.1</span><span class="o">*</span><span class="n">s</span><span class="o">+</span><span class="mi">1</span><span class="p">);</span>
+<span class="n">bode</span><span class="p">(</span><span class="n">G</span><span class="p">);</span>
+<span class="n">grid</span><span class="w"> </span><span class="s">on</span><span class="p">;</span></code></pre></div>
+<h2 id="section-32">十一、把本课知识连接起来</h2>
+<p>输入不同频率正弦，求 $G(j\omega)$，由模得到幅值增益，由辐角得到相位差，再绘制 Bode 图。</p>
+<table>
+<thead>
+<tr>
+<th>公式</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\omega=2\pi f$</td>
+<td>两种频率转换</td>
+</tr>
+<tr>
+<td>$G(j\omega)=G(s)\big\vert_{s=j\omega}$</td>
+<td>计算频率响应</td>
+</tr>
+<tr>
+<td>$M(\omega)=\lvert G(j\omega)\rvert$</td>
+<td>幅值增益</td>
+</tr>
+<tr>
+<td>$\phi(\omega)=\arg G(j\omega)$</td>
+<td>相位差</td>
+</tr>
+<tr>
+<td>$L(\omega)=20\log_{10}M(\omega)$</td>
+<td>幅值换成 dB</td>
+</tr>
+<tr>
+<td>$\omega_c=1/\tau$</td>
+<td>本课一阶低通的截止角频率</td>
+</tr>
+</tbody>
+</table>
+<p>最后一条仅适用于本课模型，不能推广为所有系统的截止频率公式。</p>
+<h2 id="section-33">十二、第 12 课课后练习</h2>
+<p>四题待作答、待批改。</p>
+<h3 id="section-34">问题 1：截止频率计算</h3>
+<p>已知 $G(s)=1/(0.2s+1)$，计算截止角频率 $\omega_c$（rad/s）和普通截止频率 $f_c$（Hz）。</p>
+<h3 id="section-35">问题 2：幅值和相位的理解</h3>
+<p>指定频率下幅值增益为 0.5、相位差为 −45°。输入正弦幅值为 2，输出幅值是多少？相位变化是什么？</p>
+<h3 id="section-36">问题 3：时间常数与 Bode 图</h3>
+<p>对 $G(s)=1/(\tau s+1)$，将 $\tau$ 从 0.1 s 增大到 0.5 s：</p>
+<ol>
+<li>截止角频率怎样变化？</li>
+<li>对相同较高频率输入，衰减变大还是变小？</li>
+<li>响应通常变快还是变慢？</li>
+</ol>
+<h3 id="section-37">问题 4：机器人控制应用</h3>
+<p>机械臂能准确跟踪缓慢正弦轨迹，频率提高后却出现明显衰减和滞后：</p>
+<ol>
+<li>说明什么？</li>
+<li>为什么不能无限增大 $K_p$？</li>
+<li>频率响应与微分滤波有什么联系？</li>
+</ol>
+<p>将答案发回课程对话，逐题批改并解释知识点。批改后等待你明确说“下一课”再继续。</p>
+<h2 id="section-38">课程衔接与条件检查</h2>
+<h3 id="section-39">dB、频率单位和稳态正弦的限制</h3>
+<p>幅值采用 $20\log_{10}|G(j\omega)|$：幅值 2 约为 6.02 dB，幅值 0.5 约为 −6.02 dB；这不是功率的 10log 公式。1 Hz 对应 2π rad/s，图轴用 rad/s 时不要把 Hz 数值直接代入。</p>
+<p>正弦稳态解释还依赖瞬态会消退。对不稳定对象，即使能代入 jω 得到复数，也不能直接认为实际输出最后只剩一条稳定正弦。Nyquist 分析仍会使用频率映射，但目的和适用解释要分清。</p>
+<p><strong>自查</strong>：ω=10 rad/s 时幅值比例与相位大约是多少？</p>
+</article><div class="page-footer"><a href="11-根轨迹与增益设计.html">← 上一课</a><a href="13-Nyquist稳定判据.html">下一课 →</a></div></main>
+<nav class="sidebar" aria-label="课程总目录"><div class="sidebar-title">课程总目录</div><a class="nav-home" href="../index.html">首页 · 课程目录</a><div class="group-label">按学习阶段浏览</div><details class="nav-phase" open><summary><span class="phase-title">阶段 0｜经典控制基础与补桥</span><small>第 1–16 课：反馈、PID、稳定性与频域设计</small></summary><details class="nav-course"><summary><span class="course-number">第 1 课</span><span class="course-title">反馈控制与第一个 PD 控制器</span></summary><div class="nav-course-links"><a class="" href="01-反馈控制.html">讲解</a><a class="" href="../reviews/01-反馈控制.html">复习</a><a class="" href="../formulas/01-反馈控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 2 课</span><span class="course-title">二阶系统、阻尼比与超调量</span></summary><div class="nav-course-links"><a class="" href="02-二阶系统.html">讲解</a><a class="" href="../reviews/02-二阶系统.html">复习</a><a class="" href="../formulas/02-二阶系统.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 3 课</span><span class="course-title">拉普拉斯变换与传递函数</span></summary><div class="nav-course-links"><a class="" href="03-传递函数.html">讲解</a><a class="" href="../reviews/03-传递函数.html">复习</a><a class="" href="../formulas/03-传递函数.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 4 课</span><span class="course-title">极点、零点与系统稳定性</span></summary><div class="nav-course-links"><a class="" href="04-极点与零点.html">讲解</a><a class="" href="../reviews/04-极点与零点.html">复习</a><a class="" href="../formulas/04-极点与零点.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 5 课</span><span class="course-title">时间响应指标与 PD 控制器参数设计</span></summary><div class="nav-course-links"><a class="" href="05-PD参数设计.html">讲解</a><a class="" href="../reviews/05-PD参数设计.html">复习</a><a class="" href="../formulas/05-PD参数设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 6 课</span><span class="course-title">积分控制、稳态误差与积分饱和</span></summary><div class="nav-course-links"><a class="" href="06-积分控制.html">讲解</a><a class="" href="../reviews/06-积分控制.html">复习</a><a class="" href="../formulas/06-积分控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 7 课</span><span class="course-title">稳态误差与终值定理</span></summary><div class="nav-course-links"><a class="" href="07-稳态误差与终值定理.html">讲解</a><a class="" href="../reviews/07-稳态误差与终值定理.html">复习</a><a class="" href="../formulas/07-稳态误差与终值定理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 8 课</span><span class="course-title">PID 参数整定与积分抗饱和</span></summary><div class="nav-course-links"><a class="" href="08-PID整定与抗饱和.html">讲解</a><a class="" href="../reviews/08-PID整定与抗饱和.html">复习</a><a class="" href="../formulas/08-PID整定与抗饱和.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 9 课</span><span class="course-title">数字 PID 实现</span></summary><div class="nav-course-links"><a class="" href="09-数字PID实现.html">讲解</a><a class="" href="../reviews/09-数字PID实现.html">复习</a><a class="" href="../formulas/09-数字PID实现.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 10 课</span><span class="course-title">Routh稳定判据</span></summary><div class="nav-course-links"><a class="" href="10-Routh稳定判据.html">讲解</a><a class="" href="../reviews/10-Routh稳定判据.html">复习</a><a class="" href="../formulas/10-Routh稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 11 课</span><span class="course-title">根轨迹与增益设计</span></summary><div class="nav-course-links"><a class="" href="11-根轨迹与增益设计.html">讲解</a><a class="" href="../reviews/11-根轨迹与增益设计.html">复习</a><a class="" href="../formulas/11-根轨迹与增益设计.html">公式</a></div></details><details class="nav-course" open><summary><span class="course-number">第 12 课</span><span class="course-title">频率响应与 Bode 图</span></summary><div class="nav-course-links"><a class="active" href="12-频率响应与Bode图.html">讲解</a><a class="" href="../reviews/12-频率响应与Bode图.html">复习</a><a class="" href="../formulas/12-频率响应与Bode图.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 13 课</span><span class="course-title">Nyquist 稳定判据——沿着曲线判断闭环稳定性</span></summary><div class="nav-course-links"><a class="" href="13-Nyquist稳定判据.html">讲解</a><a class="" href="../reviews/13-Nyquist稳定判据.html">复习</a><a class="" href="../formulas/13-Nyquist稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 14 课</span><span class="course-title">增益裕度与相位裕度</span></summary><div class="nav-course-links"><a class="" href="14-增益裕度与相位裕度.html">讲解</a><a class="" href="../reviews/14-增益裕度与相位裕度.html">复习</a><a class="" href="../formulas/14-增益裕度与相位裕度.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 15 课</span><span class="course-title">超前与滞后校正</span></summary><div class="nav-course-links"><a class="" href="15-超前与滞后校正.html">讲解</a><a class="" href="../reviews/15-超前与滞后校正.html">复习</a><a class="" href="../formulas/15-超前与滞后校正.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 16 课</span><span class="course-title">闭环带宽、延迟与鲁棒性</span></summary><div class="nav-course-links"><a class="" href="16-闭环带宽与延迟鲁棒性.html">讲解</a><a class="" href="../reviews/16-闭环带宽与延迟鲁棒性.html">复习</a><a class="" href="../formulas/16-闭环带宽与延迟鲁棒性.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 1｜数学与模型衔接</span><small>第 17–19 课：矩阵、特征值、传递函数与状态空间</small></summary><details class="nav-course"><summary><span class="course-number">第 17 课</span><span class="course-title">矩阵与状态向量——现代控制的数学语言</span></summary><div class="nav-course-links"><a class="" href="17-矩阵与状态向量.html">讲解</a><a class="" href="../reviews/17-矩阵与状态向量.html">复习</a><a class="" href="../formulas/17-矩阵与状态向量.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 18 课</span><span class="course-title">特征值与系统动态</span></summary><div class="nav-course-links"><a class="" href="18-特征值与系统动态.html">讲解</a><a class="" href="../reviews/18-特征值与系统动态.html">复习</a><a class="" href="../formulas/18-特征值与系统动态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 19 课</span><span class="course-title">传递函数到状态空间</span></summary><div class="nav-course-links"><a class="" href="19-传递函数到状态空间.html">讲解</a><a class="" href="../reviews/19-传递函数到状态空间.html">复习</a><a class="" href="../formulas/19-传递函数到状态空间.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 2｜现代线性控制核心</span><small>第 20–31 课：状态响应、反馈、LQR、估计与离散综合</small></summary><details class="nav-course"><summary><span class="course-number">第 20 课</span><span class="course-title">状态空间基础</span></summary><div class="nav-course-links"><a class="" href="20-状态空间基础.html">讲解</a><a class="" href="../reviews/20-状态空间基础.html">复习</a><a class="" href="../formulas/20-状态空间基础.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 21 课</span><span class="course-title">相平面与状态轨迹</span></summary><div class="nav-course-links"><a class="" href="21-相平面与状态轨迹.html">讲解</a><a class="" href="../reviews/21-相平面与状态轨迹.html">复习</a><a class="" href="../formulas/21-相平面与状态轨迹.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 22 课</span><span class="course-title">连续系统离散化</span></summary><div class="nav-course-links"><a class="" href="22-连续系统离散化.html">讲解</a><a class="" href="../reviews/22-连续系统离散化.html">复习</a><a class="" href="../formulas/22-连续系统离散化.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 23 课</span><span class="course-title">可控性与可达状态</span></summary><div class="nav-course-links"><a class="" href="23-可控性与可达状态.html">讲解</a><a class="" href="../reviews/23-可控性与可达状态.html">复习</a><a class="" href="../formulas/23-可控性与可达状态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 24 课</span><span class="course-title">线性系统的Lyapunov稳定性</span></summary><div class="nav-course-links"><a class="" href="24-线性系统的Lyapunov稳定性.html">讲解</a><a class="" href="../reviews/24-线性系统的Lyapunov稳定性.html">复习</a><a class="" href="../formulas/24-线性系统的Lyapunov稳定性.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 25 课</span><span class="course-title">状态反馈与极点配置</span></summary><div class="nav-course-links"><a class="" href="25-状态反馈与极点配置.html">讲解</a><a class="" href="../reviews/25-状态反馈与极点配置.html">复习</a><a class="" href="../formulas/25-状态反馈与极点配置.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 26 课</span><span class="course-title">LQR最优状态反馈</span></summary><div class="nav-course-links"><a class="" href="26-LQR最优状态反馈.html">讲解</a><a class="" href="../reviews/26-LQR最优状态反馈.html">复习</a><a class="" href="../formulas/26-LQR最优状态反馈.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 27 课</span><span class="course-title">状态反馈的参考跟踪</span></summary><div class="nav-course-links"><a class="" href="27-状态反馈的参考跟踪.html">讲解</a><a class="" href="../reviews/27-状态反馈的参考跟踪.html">复习</a><a class="" href="../formulas/27-状态反馈的参考跟踪.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 28 课</span><span class="course-title">可观测性与输出信息</span></summary><div class="nav-course-links"><a class="" href="28-可观测性与输出信息.html">讲解</a><a class="" href="../reviews/28-可观测性与输出信息.html">复习</a><a class="" href="../formulas/28-可观测性与输出信息.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 29 课</span><span class="course-title">Luenberger状态观测器</span></summary><div class="nav-course-links"><a class="" href="29-Luenberger状态观测器.html">讲解</a><a class="" href="../reviews/29-Luenberger状态观测器.html">复习</a><a class="" href="../formulas/29-Luenberger状态观测器.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 30 课</span><span class="course-title">观测器反馈与分离原理</span></summary><div class="nav-course-links"><a class="" href="30-观测器反馈与分离原理.html">讲解</a><a class="" href="../reviews/30-观测器反馈与分离原理.html">复习</a><a class="" href="../formulas/30-观测器反馈与分离原理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 31 课</span><span class="course-title">离散状态反馈与综合设计</span></summary><div class="nav-course-links"><a class="" href="31-离散状态反馈与综合设计.html">讲解</a><a class="" href="../reviews/31-离散状态反馈与综合设计.html">复习</a><a class="" href="../formulas/31-离散状态反馈与综合设计.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 3｜非线性控制进阶</span><small>后续计划：Lyapunov、LaSalle 与非线性控制</small></summary><div class="phase-coming">该阶段课程将在学习进度推进后加入。</div></details><details class="nav-phase"><summary><span class="phase-title">阶段 4｜机器人与车辆实践</span><small>控制器综合设计、MATLAB 与 C++ 实现</small></summary><details class="nav-course"><summary><span class="course-number">第 32 课</span><span class="course-title">机器人控制器综合设计</span></summary><div class="nav-course-links"><a class="" href="32-机器人控制器综合设计.html">讲解</a><a class="" href="../reviews/32-机器人控制器综合设计.html">复习</a><a class="" href="../formulas/32-机器人控制器综合设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 33 课</span><span class="course-title">MATLAB 仿真与 C++ 控制循环</span></summary><div class="nav-course-links"><a class="" href="33-MATLAB仿真与C++控制循环.html">讲解</a><a class="" href="../reviews/33-MATLAB仿真与C++控制循环.html">复习</a><a class="" href="../formulas/33-MATLAB仿真与C++控制循环.html">公式</a></div></details></details></nav>
+</div><script data-demo-module="demo-core">
+/* 共享交互基础设施：课程页面按需加载各 demo 的普通脚本，兼容 file:// 离线打开。 */
+(function(){
+  'use strict';
+  const registry = new Map();
+  const DEG = 180/Math.PI;
+  function color(light,dark){return document.documentElement.dataset.theme==='dark'?dark:light;}
+  function poleRoots(J,Kp,Kd){
+    const d=Kd*Kd-4*J*Kp;
+    return d>=0 ? [{re:(-Kd+Math.sqrt(d))/(2*J),im:0},{re:(-Kd-Math.sqrt(d))/(2*J),im:0}]
+      : [{re:-Kd/(2*J),im:Math.sqrt(-d)/(2*J)},{re:-Kd/(2*J),im:-Math.sqrt(-d)/(2*J)}];
+  }
+  function solve(J,Kp,Kd){
+    let q=0,v=0,t=0;const dt=.008,out=[],qr=Math.PI/2;
+    const rhs=(a,b)=>[b,(Kp*(qr-a)-Kd*b)/J];
+    for(let i=0;i<=750;i++){
+      out.push([t,q*DEG]);
+      const a=rhs(q,v),b=rhs(q+dt*a[0]/2,v+dt*a[1]/2),c=rhs(q+dt*b[0]/2,v+dt*b[1]/2),d=rhs(q+dt*c[0],v+dt*c[1]);
+      q+=dt*(a[0]+2*b[0]+2*c[0]+d[0])/6;
+      v+=dt*(a[1]+2*b[1]+2*c[1]+d[1])/6;t+=dt;
+    }
+    return out;
+  }
+  function canvasReady(canvas){
+    const w=Math.max(canvas.clientWidth,260),h=canvas.clientHeight||245,dpr=window.devicePixelRatio||1;
+    canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+    const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return {ctx,w,h};
+  }
+  function mountPD(node, options){
+    const J0=Number(node.dataset.j||1),Kp0=Number(node.dataset.kp||16),Kd0=Number(node.dataset.kd??8);
+    node.innerHTML=`<p class="demo-title">${options.title}</p><p class="demo-note">理想单关节模型，目标 90°、初始角度及速度为零；本地浏览器计算。</p>
+      <div class="demo-controls">
+      <div class="control"><label>J（kg·m²）<output data-out="j"></output></label><input data-param="j" type="range" min="0.5" max="5" step="0.5"></div>
+      <div class="control"><label>Kp（N·m/rad）<output data-out="kp"></output></label><input data-param="kp" type="range" min="2" max="36" step="2"></div>
+      <div class="control"><label>Kd（N·m·s/rad）<output data-out="kd"></output></label><input data-param="kd" type="range" min="0" max="24" step="1"></div>
+      </div><canvas class="demo-canvas" role="img" aria-label="互动数学模型的曲线"></canvas>
+      <div class="demo-meta" aria-live="polite"></div><div class="demo-caption">${options.caption}</div>`;
+    const inputs={};node.querySelectorAll('input').forEach(el=>inputs[el.dataset.param]=el);
+    inputs.j.value=String(J0);inputs.kp.value=String(Kp0);inputs.kd.value=String(Kd0);
+    const canvas=node.querySelector('canvas'),meta=node.querySelector('.demo-meta');
+    function draw(){
+      const J=+inputs.j.value,Kp=+inputs.kp.value,Kd=+inputs.kd.value;
+      for(const name of ['j','kp','kd'])node.querySelector('[data-out="'+name+'"]').textContent=inputs[name].value;
+      const z=Kd/(2*Math.sqrt(J*Kp)),wn=Math.sqrt(Kp/J);
+      const details=options.render(canvas,J,Kp,Kd);
+      meta.replaceChildren();
+      for(const str of [`阻尼比 ζ = ${z.toFixed(3)}`,`ωn = ${wn.toFixed(3)} rad/s`,...details]){
+        const s=document.createElement('span');s.textContent=str;meta.appendChild(s);
+      }
+    }
+    Object.values(inputs).forEach(el=>el.addEventListener('input',draw));
+    window.addEventListener('robot-theme-changed',draw);
+    if(typeof ResizeObserver!=='undefined')new ResizeObserver(draw).observe(canvas);
+    else window.addEventListener('resize',draw);
+    draw();
+  }
+  window.NoteDemos={register(name,mount){
+    if(registry.has(name))throw new Error('重复的演示名称：'+name);
+    registry.set(name,mount);
+  }, utils:{color,poleRoots,solve,canvasReady,mountPD}};
+  function boot(){
+    document.querySelectorAll('.demo[data-demo]').forEach(node=>{
+      const name=node.dataset.demo;
+      try{
+        if(!registry.has(name))throw new Error(`模块「${name}」没有注册`);
+        registry.get(name)(node,window.NoteDemos.utils);
+      }catch(err){
+        node.textContent=`演示加载失败（${name}）：${err.message}。正文和公式仍可阅读。`;
+        node.classList.add('demo-error');console.error(err);
+      }
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+
+</script>
+<script data-demo-module="design">
+/* 第 12 课：正弦稳态响应和可调时间常数的 Bode 图。 */
+(function () {
+  'use strict';
+  window.NoteDemos.register('design', function (node, u) {
+    const bode = node.dataset.mode === 'bode';
+    node.classList.add('frequency-lab');
+    node.innerHTML =
+      '<p class="demo-title">' + (bode ? '实验二 · 频率与时间常数' : '实验一 · 正弦轨迹跟踪') + '</p>' +
+      '<p class="demo-note">模型 G(s)=1/(τs+1)。蓝色：输入；橙色：稳态输出 / 当前频率；绿色虚线：截止频率。</p>' +
+      '<div class="demo-controls"><div class="control"><label>输入角频率 <output data-o="w"></output></label><input aria-label="输入角频率的十进对数" data-p="w" type="range" min="-1" max="2" step="0.01" value="1"></div>' +
+      (bode ? '<div class="control"><label>时间常数 τ <output data-o="tau"></output></label><input aria-label="时间常数（秒）" data-p="tau" type="range" min="0.02" max="0.5" step="0.01" value="0.1"></div>' :
+        '<div class="control"><label>观察时刻 t/T <output data-o="time"></output></label><input aria-label="观察时刻（周期数）" data-p="time" type="range" min="0" max="2" step="0.01" value="0.25"></div>') +
+      '</div><div class="lab-presets"><button type="button" data-w="0">1 rad/s</button><button type="button" data-w="1">10 rad/s</button><button type="button" data-w="2">100 rad/s</button></div>' +
+      (bode ? '<canvas data-chart="mag" class="demo-canvas" role="img" aria-label="对数频率下的幅频曲线"></canvas><canvas data-chart="phase" class="demo-canvas" role="img" aria-label="对数频率下的相频曲线"></canvas>' :
+        '<canvas data-chart="wave" class="demo-canvas" role="img" aria-label="两个周期内的输入与稳态输出"></canvas><canvas data-chart="arm" class="demo-canvas arm-canvas" role="img" aria-label="相同观察时刻下两个简化机械臂"></canvas>') +
+      '<div class="demo-meta" aria-live="polite"></div><p class="demo-caption" data-status></p>';
+    const controls = Object.fromEntries([...node.querySelectorAll('input')].map(x => [x.dataset.p,x]));
+    const canvases = [...node.querySelectorAll('canvas')];
+    function frame(canvas, title, ymin, ymax, xmin, xmax, ticks, xlabel) {
+      const {ctx,w,h} = u.canvasReady(canvas);
+      ctx.clearRect(0,0,w,h);
+      const text = u.color('#344050','#dbe5ef'), grid = u.color('#e3e8ed','#3b4758');
+      ctx.font='11px sans-serif'; ctx.fillStyle=text; ctx.fillText(title,12,18);
+      const r={x:47,y:32,w:w-65,h:h-70};
+      const X=x=>r.x+(x-xmin)/(xmax-xmin)*r.w;
+      const Y=y=>r.y+r.h-(y-ymin)/(ymax-ymin)*r.h;
+      ctx.strokeStyle=grid; ctx.lineWidth=1;
+      for(let i=0;i<=4;i++) {
+        const v=ymin+(ymax-ymin)*i/4,y=Y(v);
+        ctx.beginPath();ctx.moveTo(r.x,y);ctx.lineTo(r.x+r.w,y);ctx.stroke();
+        ctx.fillStyle=text;ctx.textAlign='right';ctx.fillText(v.toFixed(Math.abs(v)<2?1:0),r.x-6,y+4);
+      }
+      ticks.forEach(([x,label])=>{
+        const px=X(x);ctx.strokeStyle=grid;ctx.beginPath();ctx.moveTo(px,r.y);ctx.lineTo(px,r.y+r.h);ctx.stroke();
+        ctx.fillStyle=text;ctx.textAlign='center';ctx.fillText(label,px,r.y+r.h+16);
+      });
+      ctx.textAlign='center';ctx.fillText(xlabel,r.x+r.w/2,h-5);ctx.textAlign='left';
+      function line(fn,color) {
+        ctx.save();ctx.beginPath();ctx.rect(r.x,r.y,r.w,r.h);ctx.clip();
+        ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();
+        for(let i=0;i<=400;i++){const x=xmin+(xmax-xmin)*i/400,y=fn(x);i?ctx.lineTo(X(x),Y(y)):ctx.moveTo(X(x),Y(y));}
+        ctx.stroke();ctx.restore();
+      }
+      function mark(x,y,color,dashed) {
+        ctx.save();ctx.strokeStyle=color;ctx.setLineDash(dashed?[5,4]:[2,3]);
+        ctx.beginPath();ctx.moveTo(X(x),r.y);ctx.lineTo(X(x),r.y+r.h);ctx.stroke();
+        ctx.setLineDash([]);ctx.fillStyle=color;ctx.beginPath();ctx.arc(X(x),Y(y),4,0,2*Math.PI);ctx.fill();ctx.restore();
+      }
+      return {ctx,w,h,r,X,Y,line,mark,text};
+    }
+    function draw() {
+      const omega=10**(+controls.w.value),tau=bode?+controls.tau.value:0.1;
+      const mag=1/Math.sqrt(1+(omega*tau)**2),phase=-Math.atan(omega*tau),db=20*Math.log10(mag);
+      node.querySelector('[data-o="w"]').textContent=omega.toFixed(2)+' rad/s';
+      if(bode) {
+        node.querySelector('[data-o="tau"]').textContent=tau.toFixed(2)+' s';
+        const ticks=[[-1,'0.1'],[0,'1'],[1,'10'],[2,'100'],[3,'1000']];
+        const a=frame(canvases[0],'幅频曲线 · dB',-60,0,-1,3,ticks,'角频率 ω (rad/s)，对数刻度');
+        const p=frame(canvases[1],'相频曲线 · deg',-90,0,-1,3,ticks,'角频率 ω (rad/s)，对数刻度');
+        a.line(lx=>-10*Math.log10(1+(10**lx*tau)**2),'#3889cf');
+        p.line(lx=>-Math.atan(10**lx*tau)*180/Math.PI,'#3889cf');
+        a.mark(Math.log10(1/tau),-10*Math.log10(2),'#409e76',true);
+        p.mark(Math.log10(1/tau),-45,'#409e76',true);
+        a.mark(Math.log10(omega),db,'#d88b2b',false);
+        p.mark(Math.log10(omega),phase*180/Math.PI,'#d88b2b',false);
+      } else {
+        const moment=+controls.time.value;
+        node.querySelector('[data-o="time"]').textContent=moment.toFixed(2);
+        const f=frame(canvases[0],'归一化输入与输出 · 幅值',-1.2,1.2,0,2,[[0,'0'],[.5,'0.5'],[1,'1'],[1.5,'1.5'],[2,'2']],'周期位置 t/T');
+        f.line(x=>Math.sin(2*Math.PI*x),'#3889cf');
+        f.line(x=>mag*Math.sin(2*Math.PI*x+phase),'#d88b2b');
+        f.mark(moment,mag*Math.sin(2*Math.PI*moment+phase),'#d88b2b',false);
+        const {ctx,w,h}=u.canvasReady(canvases[1]);ctx.clearRect(0,0,w,h);
+        const ink=u.color('#344050','#dbe5ef');
+        ctx.font='12px sans-serif';ctx.textAlign='center';ctx.fillStyle=ink;
+        ctx.fillText('45° 正弦摆动 · 同一时刻的简化示意',w/2,20);
+        [0,1].forEach(i=>{
+          const x=w*(i?.74:.26),y=h-32,length=Math.min(85,h-65);
+          const angle=(i?mag*Math.sin(2*Math.PI*moment+phase):Math.sin(2*Math.PI*moment))*Math.PI/4;
+          ctx.strokeStyle=u.color('#b4bec9','#617084');ctx.setLineDash([3,3]);
+          ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y-length);ctx.stroke();ctx.setLineDash([]);
+          ctx.strokeStyle=i?'#d88b2b':'#3889cf';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(x,y);
+          ctx.lineTo(x+length*Math.sin(angle),y-length*Math.cos(angle));ctx.stroke();
+          ctx.fillStyle=ink;ctx.beginPath();ctx.arc(x,y,5,0,2*Math.PI);ctx.fill();
+          ctx.fillText((i?'实际':'目标')+' '+(angle*180/Math.PI).toFixed(1)+'°',x,h-8);
+        });ctx.textAlign='left';
+      }
+      const messages=[
+        'f = '+(omega/(2*Math.PI)).toFixed(3)+' Hz',
+        '周期 T = '+(2*Math.PI/omega).toFixed(3)+' s',
+        '幅值比 M = '+mag.toFixed(3),
+        '幅值 = '+db.toFixed(2)+' dB',
+        '相位 = '+(phase*180/Math.PI).toFixed(1)+'°'
+      ];
+      if(bode) messages.push('ωc = '+(1/tau).toFixed(2)+' rad/s','fc = '+(1/(2*Math.PI*tau)).toFixed(3)+' Hz');
+      else messages.push('观察时刻 t = '+(+controls.time.value*2*Math.PI/omega).toFixed(3)+' s');
+      const meta=node.querySelector('.demo-meta');meta.replaceChildren();
+      messages.forEach(text=>{const span=document.createElement('span');span.textContent=text;meta.appendChild(span);});
+      node.querySelector('[data-status]').textContent=
+        omega*tau<.3?'当前：幅值基本保持，相位滞后较小。':
+        omega*tau<3?'当前：幅值衰减明显，输出峰值落后输入。':'当前：快速输入被明显衰减，相位逐渐接近 −90°。';
+    }
+    Object.values(controls).forEach(x=>x.addEventListener('input',draw));
+    node.querySelectorAll('[data-w]').forEach(b=>b.addEventListener('click',()=>{controls.w.value=b.dataset.w;draw();}));
+    window.addEventListener('robot-theme-changed',draw);
+    if(typeof ResizeObserver!=='undefined')new ResizeObserver(draw).observe(node);
+    else window.addEventListener('resize',draw);
+    draw();
+  });
+})();
+
+</script></body></html>

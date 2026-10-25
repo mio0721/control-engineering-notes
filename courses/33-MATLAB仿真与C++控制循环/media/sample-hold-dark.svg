@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 330" role="img" aria-labelledby="t d">
+<title id="t">采样目标和零阶保持命令示意</title><desc id="d">连续目标曲线是平滑的，采样保持命令在每个采样时刻更新并在间隔内保持恒定；对象输出更平滑但有滞后。</desc>
+<rect width="820" height="330" fill="#111a24"/>
+<g fill="none" stroke="#435565" stroke-width="1.3"><path d="M78 45V257H760"/><path d="M78 90H760M78 145H760M78 200H760" stroke-dasharray="4 6"/><path d="M170 45V257M262 45V257M354 45V257M446 45V257M538 45V257M630 45V257M722 45V257" stroke-dasharray="2 7"/></g>
+<path d="M80 165 C125 70 170 70 215 165 S305 260 350 165 S440 70 485 165 S575 260 620 165 S710 70 755 165" fill="none" stroke="#65b9e8" stroke-width="3"/>
+<path d="M80 165H170V92H262V92H354V165H446V238H538V238H630V165H722V92H755" fill="none" stroke="#f0a65c" stroke-width="3"/>
+<path d="M80 165 C130 120 190 105 235 115 S325 145 365 165 S455 205 495 202 S585 190 625 165 S715 125 755 120" fill="none" stroke="#68c9a5" stroke-width="3"/>
+<g fill="#eff4f8" font-family="Arial,sans-serif">
+<text x="80" y="28" font-size="18" font-weight="bold">采样与零阶保持</text>
+<text x="570" y="58" font-size="14" fill="#65b9e8">连续目标</text>
+<text x="570" y="82" font-size="14" fill="#f0a65c">采样保持命令</text>
+<text x="570" y="106" font-size="14" fill="#68c9a5">对象输出（滞后）</text>
+<text x="78" y="285" font-size="14">控制器更新时刻</text><text x="420" y="316" font-size="15" text-anchor="middle">时间 (s)</text>
+<text x="35" y="160" font-size="14" text-anchor="middle" transform="rotate(-90 35 160)">信号</text>
+</g>
+</svg>
