@@ -171,7 +171,7 @@ PM&=180^\circ-3\arctan(\omega_{gc})\approx27.1^\circ.
 \end{aligned}
 $$
 
-相位−180°的位置为√3 rad/s，此处幅值为4/8=0.5，因此：
+相位−180°的位置为√3 rad/s，此处幅值为$4/8=0.5$，因此：
 
 $$GM=\frac1{0.5}=2,\qquad GM_{dB}=20\log_{10}2\approx6.02\ \mathrm{dB}.$$
 
@@ -191,7 +191,7 @@ $$GM=\frac1{0.5}=2,\qquad GM_{dB}=20\log_{10}2\approx6.02\ \mathrm{dB}.$$
 
 <details><summary>查看思路与答案</summary>
 
-仍以临界增益8为参照，倍率8/6≈1.333，约2.50 dB；不要直接写“剩余增益2”。
+仍以临界增益8为参照，倍率$8/6\approx1.333$，约2.50 dB；不要直接写“剩余增益2”。
 
 </details>
 
@@ -251,7 +251,15 @@ $$
 5. **计算 GM。**幅值 dB 若为 $A_{\mathrm{dB}}$，则 $\mathrm{GM}_{\mathrm{dB}}=-A_{\mathrm{dB}}$；线性 GM 为 $10^{\mathrm{GM}_{\mathrm{dB}}/20}$。
 6. **看是否有多个交越点、系统是否开环稳定，以及裕度定义是否适用。**标注 MATLAB 或软件返回的每个交越点，不要只挑看起来好看的一个。
 
-口算示例：若 $\omega_{gc}=5\,\mathrm{rad/s}$ 时相位为 $-140^\circ$，则 PM 为 $40^\circ$。若 $\omega_{pc}=12\,\mathrm{rad/s}$ 时幅值为 $-8\,\mathrm{dB}$，则 GM 为 $+8\,\mathrm{dB}$，线性倍数约为 $10^{8/20}=2.51$。
+口算示例：
+
+$$
+\begin{aligned}
+\omega_{gc}=5\,\mathrm{rad/s},\quad &\angle L(j\omega_{gc})=-140^\circ, &\mathrm{PM}&=40^\circ,\\
+\omega_{pc}=12\,\mathrm{rad/s},\quad &|L(j\omega_{pc})|_{\mathrm{dB}}=-8\,\mathrm{dB}, &\mathrm{GM}_{\mathrm{dB}}&=8\,\mathrm{dB},\\
+&&\mathrm{GM}&=10^{8/20}\approx2.51.
+\end{aligned}
+$$
 
 ## 八、裕度大就一定更好吗？
 

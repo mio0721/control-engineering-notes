@@ -37,13 +37,13 @@ $$</p>
 &amp;=(\lambda+1)(\lambda+2).
 \end{aligned}
 $$</p>
-<p>令行列式为零，得到 λ₁=−1、λ₂=−2。为什么要令它为零？因为特征向量需要满足非零解：</p>
+<p>令行列式为零，得到 $λ₁=−1$、$λ₂=−2$。为什么要令它为零？因为特征向量需要满足非零解：</p>
 <p>$$
 (A-\lambda I)v=0,\qquad v\ne0.
 $$</p>
-<p>若 A−λI 可逆，两边乘逆矩阵只能得到 v=0。因此出现非零特征向量时，该矩阵必须不可逆，行列式为零。</p>
+<p>若 A−λI 可逆，两边乘逆矩阵只能得到 $v=0$。因此出现非零特征向量时，该矩阵必须不可逆，行列式为零。</p>
 <h3 id="section-4">找出每个特征方向</h3>
-<p>λ=−1 时，第一行给出 v₂=−v₁；取 v₁=1，得到 [1,−1]ᵀ。λ=−2 时同理得到 [1,−2]ᵀ。可以直接乘回去核对：</p>
+<p>$λ=−1$ 时，第一行给出 $v₂=−v₁$；取 $v₁=1$，得到 [1,−1]ᵀ。$λ=−2$ 时同理得到 [1,−2]ᵀ。可以直接乘回去核对：</p>
 <p>$$
 A\begin{bmatrix}1\\-1\end{bmatrix}=-\begin{bmatrix}1\\-1\end{bmatrix},\qquad
 A\begin{bmatrix}1\\-2\end{bmatrix}=-2\begin{bmatrix}1\\-2\end{bmatrix}.
@@ -59,7 +59,7 @@ c_1+c_2&amp;=1,\\
 -c_1-2c_2&amp;=0.
 \end{aligned}
 $$</p>
-<p>得到 c₁=2、c₂=−1。再让每个模态按自己的指数变化：</p>
+<p>得到 $c₁=2$、$c₂=−1$。再让每个模态按自己的指数变化：</p>
 <p>$$
 \begin{aligned}
 x(t)&amp;=2e^{-t}\begin{bmatrix}1\\-1\end{bmatrix}
@@ -68,17 +68,29 @@ q(t)&amp;=2e^{-t}-e^{-2t},\\
 \dot q(t)&amp;=-2e^{-t}+2e^{-2t}.
 \end{aligned}
 $$</p>
-<p>代入 t=0，位置为 1、速度为 0；两项随时间都趋于零。后期 e⁻ᵗ 衰减更慢，通常主导尾部；如果初态只激发另一个方向，慢模态也可能不出现。</p>
+<p>代入 $t=0$，位置为 $1$、速度为 $0$；两项随时间都趋于零。后期 $e^{-t}$ 衰减更慢，通常主导尾部；如果初态只激发另一个方向，慢模态也可能不出现。</p>
 <h2 id="section-6">4. 复特征值为什么对应振荡？</h2>
-<p>对 $\ddot q+b\dot q+kq=0$，当 $b=2,k=4$ 时，特征值为 $-1\pm j\sqrt3$。由欧拉公式可得实数解是 $e^{-t}\cos(\sqrt3t)$ 与 $e^{-t}\sin(\sqrt3t)$ 的组合。实部 −1 控制包络衰减，虚部 $\sqrt3$ 控制振荡角频率。</p>
+<p>以</p>
+<p>$$
+\ddot q+b\dot q+kq=0,\qquad b=2,\quad k=4
+$$</p>
+<p>为例，其特征值为</p>
+<p>$$
+\lambda_{1,2}=-1\pm j\sqrt3.
+$$</p>
+<p>对应的实数解由以下两个模态组合而成：</p>
+<p>$$
+e^{-t}\cos(\sqrt3t),\qquad e^{-t}\sin(\sqrt3t).
+$$</p>
+<p>实部 $-1$ 控制包络衰减，虚部 $\sqrt3$ 控制振荡角频率。</p>
 <p>在状态平面上，位置与速度一起变化，常呈螺旋形趋近原点。实部相同、虚部不同，衰减包络可以相同而振荡快慢不同；虚部相同、实部不同，振荡周期可以相同而衰减快慢不同。</p>
 <p><img alt="欠阻尼系统的实际状态轨迹及时间标记" src="../courses/18-特征值与系统动态/media/phase-dark.svg"/></p>
 <h2 id="section-7">5. 稳定判据与边界例外</h2>
 <p>连续线性自治系统对所有初态渐近稳定，当且仅当全部特征值实部严格为负。有正实部模态时不稳定。特征值在虚轴上时，需要进一步检查，不能仅凭“没有正实部”就说稳定。</p>
 <p>反例 $A=[0,1;0,0]$ 的两个特征值都是零，却有 $q(t)=q(0)+t\dot q(0)$，可随时间线性增长。这与重复根的 Jordan 结构有关，后续再深入。</p>
-<p>离散系统 $x_{k+1}=A_dx_k$ 要求全部特征值模长严格小于 1。连续标量系统 $\dot x=-2x$ 的精确离散特征值为 $e^{-2T_s}$，说明连续负实部对应离散单位圆内。不要把两种判据混用。</p>
+<p>离散系统 $x_{k+1}=A_dx_k$ 要求全部特征值模长严格小于 $1$。连续标量系统 $\dot x=-2x$ 的精确离散特征值为 $e^{-2T_s}$，说明连续负实部对应离散单位圆内。不要把两种判据混用。</p>
 <h2 id="section-8">初态改变，为什么慢模态有时会完全消失？</h2>
-<p>沿用A=[0,1;−2,−3]，两个特征方向为v₁=[1,−1]ᵀ、v₂=[1,−2]ᵀ。先用模态系数表示初态：</p>
+<p>沿用 $A=\begin{bmatrix}0&amp;1\\-2&amp;-3\end{bmatrix}$，两个特征方向为 $v_1=[1,-1]^{\mathsf T}$、$v_2=[1,-2]^{\mathsf T}$。先用模态系数表示初态：</p>
 <p>$$x(0)=c_1v_1+c_2v_2.$$</p>
 <p>若初态是[1,0]ᵀ，系数为2、−1，位置响应含两种指数；若初态直接选v₂，只剩快模态：</p>
 <p>$$
@@ -87,7 +99,7 @@ x_a(0)&amp;=\begin{bmatrix}1\\0\end{bmatrix},&amp;q_a(t)&amp;=2e^{-t}-e^{-2t},\\
 x_b(0)&amp;=\begin{bmatrix}1\\-2\end{bmatrix},&amp;q_b(t)&amp;=e^{-2t}.
 \end{aligned}
 $$</p>
-<p>两次系统矩阵没变，特征值仍为−1、−2，但第二次的e⁻ᵗ系数为零，尾部就不再由它主导。图中两条曲线起点都为1，斜率却不同；状态除了位置，还包含初始速度。</p>
+<p>两次系统矩阵没变，特征值仍为 $-1$、$-2$，但第二次的 $e^{-t}$ 系数为零，尾部就不再由它主导。图中两条曲线起点都为 $1$，斜率却不同；状态除了位置，还包含初始速度。</p>
 <p>这说明“最慢特征值主导响应”需要条件：该模态被激发，且能在输出中观察到。只看极点位置，不看初态和输入输出，可能解释不完整。</p>
 <p><img alt="本课数值例子的定量对照图" src="../courses/18-特征值与系统动态/media/worked-example-dark.svg"/></p>
 <p><strong>读图与操作</strong>：将阻尼b=3、刚度k=2，固定初始位置1，只把初始速度依次设为0、−1、−2；比较曲线尾部。</p>
@@ -95,10 +107,10 @@ $$</p>
 <h3 id="section-9">先预测，再展开核对</h3>
 <p>若初态为[1,−1]ᵀ，位置响应是什么？</p>
 <details><summary>查看思路与答案</summary>
-<p>只激发λ=−1模态，q(t)=exp(−t)，速度为−exp(−t)。</p>
+<p>只激发λ=−1模态，$q(t)=exp(−t)$，速度为−exp(−t)。</p>
 </details>
 <h2 id="section-10">交互实验</h2>
-<p>固定 k=4，依次把 b 调为 0、2、4、6、−1。先预测极点与位置响应，再观察图像。改变初始位置和速度，理解“同一个系统也有不同响应”。蓝色为位置随时间的曲线；极点数值显示在下方。</p>
+<p>固定 $k=4$，依次把 b 调为 0、2、4、6、−1。先预测极点与位置响应，再观察图像。改变初始位置和速度，理解“同一个系统也有不同响应”。蓝色为位置随时间的曲线；极点数值显示在下方。</p>
 <div class="demo" data-demo="bridge-lab" data-mode="eigen"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>
 <h2 id="section-11">MATLAB 验证</h2>
 <div class="code-panel"><div class="code-label">MATLAB</div><pre class="code-highlight"><code><span class="n">A</span><span class="p">=[</span><span class="mi">0</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="o">-</span><span class="mi">2</span><span class="w"> </span><span class="o">-</span><span class="mi">3</span><span class="p">];</span><span class="w"> </span><span class="n">x0</span><span class="p">=[</span><span class="mi">1</span><span class="p">;</span><span class="mi">0</span><span class="p">];</span><span class="w"> </span><span class="n">t</span><span class="p">=</span><span class="nb">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">601</span><span class="p">);</span>

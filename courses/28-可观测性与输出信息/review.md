@@ -6,7 +6,7 @@ $$
 \mathcal O=[C^{\mathsf T},(CA)^{\mathsf T},\ldots,(CA^{n-1})^{\mathsf T}]^{\mathsf T},\quad\operatorname{rank}\mathcal O=n.
 $$
 
-C为p×n，O为np×n；模型线性时不变、输入已知。若D非零，可先从测量扣除Du。
+$C$ 为 $p\times n$，$\mathcal O$ 为 $np\times n$；模型线性时不变、输入已知。若 $D$ 非零，可先从测量扣除 $Du$。
 
 可观测性与(Aᵀ,Cᵀ)的可控性对偶。可检测允许存在稳定的不可观模态，但不允许不可观不稳定模态。
 
@@ -19,6 +19,6 @@ C为p×n，O为np×n；模型线性时不变、输入已知。若D非零，可�
 
 <details><summary>展开提示</summary>
 
-1. 位置时O=I；速度时O=[0,1;0,0]。2. x₂。3. 不是，病态和噪声影响仍需分析。4. 用于证明信息关系，工程估计不必直接求噪声导数。
+1. 位置测量时 $\mathcal O=I_2$；速度测量时 $\mathcal O=\begin{bmatrix}0&1\\0&0\end{bmatrix}$。2. $x_2$。3. 不是，病态和噪声影响仍需分析。4. 输出求导用于证明信息关系，工程估计不必直接求带噪声测量的导数。
 
 </details>

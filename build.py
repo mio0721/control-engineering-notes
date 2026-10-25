@@ -274,13 +274,12 @@ def make_index(courses:list[Course]):
         cards.append(f'<div class="course-row"><div><span class="chapter-index">{escape(course.number_text)}</span><h3>{escape(course.title)}</h3><p>{escape(course.goal)}</p></div><div class="course-links">{links}</div></div>')
     body='<h1>控制工程 · 总课程路线</h1><p>阶段 0、1、2 已整理；阶段 3 为后续非线性进阶计划，阶段 4 保留机器人与车辆实践材料。网页存在不表示已经学完。</p>'
     body+='<div class="banner"><strong>按阶段顺序学习</strong><p>经典控制 → 数学衔接 → 现代线性控制 → 非线性进阶 → 机器人与车辆实践。左侧阶段可折叠；页底上一课、下一课按此路线前进。课号按学习顺序连续排列。</p></div>'
-    body+='<div class="phase-picker"><label for="phaseFilter">按阶段筛选课程</label> <select id="phaseFilter" aria-label="按阶段筛选课程"><option value="all">全部阶段</option>'+''.join(f'<option value="{escape(key)}">{escape(title)}</option>' for key,title,_ in PHASES)+'</select></div>'
     body+='<h2 id="course-index">分阶段课程目录</h2>'
-    for key,title,note in PHASES:
+    for index,(key,title,note) in enumerate(PHASES):
         items=[(c,card) for c,card in zip(courses,cards) if phase_key(c)==key]
-        body+=f'<section class="phase-section" data-phase="{escape(key)}"><h3>{escape(title)}</h3><p>{escape(note)}</p><div class="course-list">'+''.join(card for c,card in items)+'</div>'
+        body+=f'<details class="phase-dropdown"{" open" if index==0 else ""}><summary><span>{escape(title)}</span><small>{escape(note)}</small></summary><div class="phase-dropdown-content"><div class="course-list">'+''.join(card for c,card in items)+'</div>'
         if not items: body+='<p>规划中：完成前置学习后继续补充。</p>'
-        body+='</section>'
+        body+='</div></details>'
     body+='<h2 id="usage">使用方式</h2><ol><li>按顺序阅读完整讲解，结合 MATLAB 程序和交互演示理解公式。</li><li>用每课的复习笔记回顾核心知识。</li><li>通过独立公式手册查询参数定义、单位与适用条件。</li></ol>'
     toc=[('course-index','课程列表','h2'),('usage','使用方式','h2')]
     page.write_text(generate_shell(page,'课程总目录','课程总目录',body,toc,None,None,[],courses),encoding='utf8')

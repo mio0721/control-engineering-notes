@@ -33,7 +33,7 @@ $$
 
 <details><summary>展开核对</summary>
 
-只激发λ=−1模态，q(t)=exp(−t)，速度为−exp(−t)。
+只激发λ=−1模态，$q(t)=exp(−t)$，速度为−exp(−t)。
 
 </details>
 

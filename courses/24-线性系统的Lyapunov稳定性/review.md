@@ -6,10 +6,10 @@ $$
 V=x^{\mathsf T}Px,\quad P=P^{\mathsf T}>0,\quad A^{\mathsf T}P+PA=-Q,\quad Q>0.
 $$
 
-V为二次型，P、Q为n×n对称正定矩阵；A为连续状态矩阵。本课为零输入线性自治系统。
+$V$ 为二次型，$P,Q\in\mathbb R^{n\times n}$ 为对称正定矩阵；$A$ 为连续状态矩阵。本课讨论零输入线性自治系统。
 
 $$
-\dot V=-x^{\mathsf T}Qx,\qquad V(t)\le V(0)e^{-\lambda_{min}(Q)t/\lambda_{max}(P)}.
+\dot V=-x^{\mathsf T}Qx,\qquad V(t)\le V(0)e^{-\lambda_{\min}(Q)t/\lambda_{\max}(P)}.
 $$
 
 指数界为充分的上界。半负定导数不能在没有其他论证时直接宣称渐近稳定。
@@ -23,6 +23,18 @@ $$
 
 <details><summary>展开提示</summary>
 
-1. 得−I。2. [1,2;2,1]所有元素正但有负特征值。3. q≠0会产生加速度，状态会离开该轴。4. Q变成aI。
+1.
+
+$$
+A^{\mathsf T}P+PA=-I.
+$$
+
+2. 例如
+
+$$
+P=\begin{bmatrix}1&2\\2&1\end{bmatrix},\qquad\det P=-3<0,
+$$
+
+所以它虽所有元素为正，却不是正定矩阵。3. 当 $q\ne0$、$v=0$ 时，$\dot q=0$ 但 $\dot v=-2q\ne0$，状态会离开该轴。4. 若 $A$ 换成 $aA$ 且 $a>0$，则 $Q$ 变成 $aI$。
 
 </details>

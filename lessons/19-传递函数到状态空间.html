@@ -19,7 +19,14 @@
 <p>带阻尼和恢复力的关节满足 $J\ddot q+b\dot q+kq=\tau$。$J$ 为惯量，$b$ 为黏性阻尼，$k$ 为等效扭转刚度，$\tau$ 为输入力矩。质量—弹簧—阻尼也有相同数学结构，只是单位不同。</p>
 <p>传递函数描述零初始条件下的输入输出关系；状态空间显式记录位置、速度等内部信息。后者尤其适合非零初态、多输入多输出和状态反馈。</p>
 <h2 id="section-2">2. 导数变换中不能漏掉初始条件</h2>
-<p>拉普拉斯变换给出 $\mathcal L\{\dot q\}=sQ-q(0)$、$\mathcal L\{\ddot q\}=s^2Q-sq(0)-\dot q(0)$。完整关系为：</p>
+<p>拉普拉斯变换给出：</p>
+<p>$$
+\begin{aligned}
+\mathcal L\{\dot q\}&amp;=sQ(s)-q(0),\\
+\mathcal L\{\ddot q\}&amp;=s^2Q(s)-sq(0)-\dot q(0).
+\end{aligned}
+$$</p>
+<p>代入机械系统方程，得到完整关系：</p>
 <p>$$
 (Js^2+bs+k)Q(s)=\mathcal{T}(s)+J[sq(0)+\dot q(0)]+bq(0).
 $$</p>
@@ -43,7 +50,7 @@ $$</p>
 <p>取可逆坐标变换 $z=Tx$，则 $\dot z=TAT^{-1}z+TBu$，$y=CT^{-1}z+Du$。例如把位置从 rad 换成度，T 的相应对角元素取 $180/\pi$。矩阵元素变化，输入输出关系和特征值不变。</p>
 <p>还可能出现不可控或不可观的内部模态，约简后的传递函数不显示它们。只有在最小实现等条件满足时，才能把全部状态特征值与传递函数极点一一对应。后续可控性与可观测性会解释这一点。</p>
 <h2 id="section-7">更换输出不必更换动力学，但传递函数会变</h2>
-<p>取J=2、b=4、k=10，状态仍是位置与速度。动力学为：</p>
+<p>取 $J=2$、$b=4$、$k=10$，状态仍是位置与速度。动力学为：</p>
 <p>$$
 \dot x=\begin{bmatrix}0&amp;1\\-5&amp;-2\end{bmatrix}x+\begin{bmatrix}0\\0.5\end{bmatrix}u.
 $$</p>
@@ -54,7 +61,7 @@ G_q(s)&amp;=\frac1{2s^2+4s+10},\\
 G_v(s)&amp;=\frac{s}{2s^2+4s+10}.
 \end{aligned}
 $$</p>
-<p>同样施加1 N·m恒定输入，最终位置为1/10=0.1 rad、速度为0。图中位置轴和速度轴分别标注单位，不能把二者当作同一个量。若选同时输出，C=I₂，输出就是二维向量。</p>
+<p>同样施加1 N·m恒定输入，最终位置为$1/10=0.1$ rad、速度为0。图中位置轴和速度轴分别标注单位，不能把二者当作同一个量。若选同时输出，$C=I₂$，输出就是二维向量。</p>
 <p>反向从状态模型到传递函数时，可把逆矩阵乘法完整写出：</p>
 <p>$$
 \begin{aligned}
@@ -72,7 +79,7 @@ $$</p>
 <p>C为2×2单位矩阵，D为2×1零向量；一个输入对应两个输出。</p>
 </details>
 <h2 id="section-9">交互实验</h2>
-<p>调节 J、b、k，核对 A 的第二行与单位阶跃力矩下的位置曲线。令 k=0，观察没有恢复力时位置能否收敛。位置单位按转动模型取 rad，时间为 s。</p>
+<p>调节 J、b、k，核对 A 的第二行与单位阶跃力矩下的位置曲线。令 $k=0$，观察没有恢复力时位置能否收敛。位置单位按转动模型取 rad，时间为 s。</p>
 <div class="demo" data-demo="bridge-lab" data-mode="state"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>
 <h2 id="section-10">MATLAB 验证</h2>
 <div class="code-panel"><div class="code-label">MATLAB</div><pre class="code-highlight"><code><span class="n">J</span><span class="p">=</span><span class="mi">2</span><span class="p">;</span><span class="w"> </span><span class="n">b</span><span class="p">=</span><span class="mi">4</span><span class="p">;</span><span class="w"> </span><span class="n">k</span><span class="p">=</span><span class="mi">10</span><span class="p">;</span>

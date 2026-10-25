@@ -23,6 +23,18 @@ $$
 
 <details><summary>展开提示</summary>
 
-1. Ad=e⁻⁰·²≈0.81873，Bd=2(1−e⁻⁰·²)≈0.36254。2. Ad=[1,.1;0,1]，Bd=[.005;.1]。4. 不能，要区分对象与数值算法。
+1. 对 $\dot x=-x+2u$、$T_s=0.2\,\mathrm{s}$，精确离散结果为
+
+$$
+A_d=e^{-T_s}=e^{-0.2}\approx0.81873,\qquad B_d=2(1-e^{-T_s})=2(1-e^{-0.2})\approx0.36254.
+$$
+
+2. 双积分器取 $T_s=0.1\,\mathrm{s}$：
+
+$$
+A_d=\begin{bmatrix}1&0.1\\0&1\end{bmatrix},\qquad B_d=\begin{bmatrix}0.005\\0.1\end{bmatrix}.
+$$
+
+4. 不能，要区分对象与数值算法。
 
 </details>

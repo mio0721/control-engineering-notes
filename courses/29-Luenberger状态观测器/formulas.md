@@ -10,4 +10,4 @@ $$
 s^2+l_1s+l_2=0\quad\text{（位置测量双积分器）}.
 $$
 
-希望−a、−b时l₁=a+b、l₂=ab。若测量含n，则ė=(A−LC)e−Ln。
+希望−a、−b时l₁=a+b、$l₂=ab$。若测量含n，则ė=(A−LC)e−Ln。

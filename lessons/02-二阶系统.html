@@ -157,7 +157,7 @@ $$</p>
 <p>图中固定自然角频率，只改变阻尼。轻阻尼的首次上升可能很快，但尾部振荡长；过阻尼不振荡，却可能由一个慢实极点拖住。</p>
 <p><img alt="本课数值例子的定量对照图" src="../courses/02-二阶系统/media/worked-example-dark.svg"/></p>
 <p><strong>读图与操作</strong>：先固定 Kp/J，再调 Kd 看阻尼；若同时改多个参数，就无法判断曲线变化来自哪里。</p>
-<p><strong>使用条件</strong>：无零点、零初态、单位直流增益的标准二阶阶跃；超调与峰值公式限定 0&lt;ζ&lt;1。</p>
+<p><strong>使用条件</strong>：无零点、零初态、单位直流增益的标准二阶阶跃；超调与峰值公式限定 $0&lt;ζ&lt;1$。</p>
 <h3 id="section-10">先预测，再展开核对</h3>
 <p>将自然角频率从 4 加倍到 8，阻尼比不变时，超调比例和峰值时间怎样变？</p>
 <details><summary>查看思路与答案</summary>
@@ -187,7 +187,7 @@ $$</p>
 <p><strong>课程小结：</strong> 标准二阶系统让我们从“看曲线调参数”进步到“通过 $J,K_p,K_d$ 定量预测曲线”。</p>
 <h2 id="section-13">课程衔接与条件检查</h2>
 <h3 id="section-14">从阻尼分类连接实际参数</h3>
-<p>带恢复力的机械模型 $J\ddot q+b\dot q+kq=u$，对应 $\omega_n=\sqrt{k/J}$、$\zeta=b/(2\sqrt{Jk})$。取 J=2、b=4、k=10，得到 $\omega_n=\sqrt5$ rad/s、$\zeta\approx0.447$，属于欠阻尼。J 变大但 b、k 不变时，固有频率和阻尼比都会变化，不能只说“惯量大所以慢”。</p>
+<p>带恢复力的机械模型 $J\ddot q+b\dot q+kq=u$，对应 $\omega_n=\sqrt{k/J}$、$\zeta=b/(2\sqrt{Jk})$。取 $J=2$、$b=4$、$k=10$，得到 $\omega_n=\sqrt5$ rad/s、$\zeta\approx0.447$，属于欠阻尼。J 变大但 b、k 不变时，固有频率和阻尼比都会变化，不能只说“惯量大所以慢”。</p>
 <p>标准超调公式通常针对无零点、标准二阶、零初态的阶跃响应；高阶系统、有显著零点或限幅时，不能直接当成精确结论。</p>
 <p><strong>自查</strong>：将自然角频率从 4 加倍到 8，阻尼比不变时，超调比例和峰值时间怎样变？</p>
 </article><div class="page-footer"><a href="01-反馈控制.html">← 上一课</a><a href="03-传递函数.html">下一课 →</a></div></main>

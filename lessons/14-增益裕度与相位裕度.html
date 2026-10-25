@@ -123,7 +123,7 @@ $$</p>
 PM&amp;=180^\circ-3\arctan(\omega_{gc})\approx27.1^\circ.
 \end{aligned}
 $$</p>
-<p>相位−180°的位置为√3 rad/s，此处幅值为4/8=0.5，因此：</p>
+<p>相位−180°的位置为√3 rad/s，此处幅值为$4/8=0.5$，因此：</p>
 <p>$$GM=\frac1{0.5}=2,\qquad GM_{dB}=20\log_{10}2\approx6.02\ \mathrm{dB}.$$</p>
 <p>2 是幅值倍率，不是2 dB。把增益从4乘以2到8，闭环到达临界，恰好与 Nyquist 的例子相连。PM 的度数和 GM 的 dB 也不能互相相加。</p>
 <p>图中标出同一模型的两个交越位置：幅值图读0 dB处的频率去相位图读PM；相位图读−180°处的频率再去幅值图读GM。</p>
@@ -133,7 +133,7 @@ $$</p>
 <h3 id="section-11">先预测，再展开核对</h3>
 <p>把当前增益从4改成6，增益裕度倍率是多少？dB是多少？</p>
 <details><summary>查看思路与答案</summary>
-<p>仍以临界增益8为参照，倍率8/6≈1.333，约2.50 dB；不要直接写“剩余增益2”。</p>
+<p>仍以临界增益8为参照，倍率$8/6\approx1.333$，约2.50 dB；不要直接写“剩余增益2”。</p>
 </details>
 <h2 id="section-12">六、交互实验：亲手把系统推向临界</h2>
 <p>我们用一个可解析的教学模型：</p>
@@ -176,7 +176,14 @@ $$</p>
 <li><strong>计算 GM。</strong>幅值 dB 若为 $A_{\mathrm{dB}}$，则 $\mathrm{GM}_{\mathrm{dB}}=-A_{\mathrm{dB}}$；线性 GM 为 $10^{\mathrm{GM}_{\mathrm{dB}}/20}$。</li>
 <li><strong>看是否有多个交越点、系统是否开环稳定，以及裕度定义是否适用。</strong>标注 MATLAB 或软件返回的每个交越点，不要只挑看起来好看的一个。</li>
 </ol>
-<p>口算示例：若 $\omega_{gc}=5\,\mathrm{rad/s}$ 时相位为 $-140^\circ$，则 PM 为 $40^\circ$。若 $\omega_{pc}=12\,\mathrm{rad/s}$ 时幅值为 $-8\,\mathrm{dB}$，则 GM 为 $+8\,\mathrm{dB}$，线性倍数约为 $10^{8/20}=2.51$。</p>
+<p>口算示例：</p>
+<p>$$
+\begin{aligned}
+\omega_{gc}=5\,\mathrm{rad/s},\quad &amp;\angle L(j\omega_{gc})=-140^\circ, &amp;\mathrm{PM}&amp;=40^\circ,\\
+\omega_{pc}=12\,\mathrm{rad/s},\quad &amp;|L(j\omega_{pc})|_{\mathrm{dB}}=-8\,\mathrm{dB}, &amp;\mathrm{GM}_{\mathrm{dB}}&amp;=8\,\mathrm{dB},\\
+&amp;&amp;\mathrm{GM}&amp;=10^{8/20}\approx2.51.
+\end{aligned}
+$$</p>
 <h2 id="section-14">八、裕度大就一定更好吗？</h2>
 <p>裕度可以帮助比较设计方案，但不是越大越好，也不能单独替代其他分析。</p>
 <ul>

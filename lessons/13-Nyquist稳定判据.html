@@ -9,7 +9,7 @@
 </head><body>
 <header class="mast"><div class="mast-inner"><a class="brand" href="../index.html">机器人控制理论笔记</a><div class="top-actions"><span class="top-indicator">已整理 33 课</span><button id="themeToggle" type="button" class="theme-toggle" aria-label="切换日间与夜间模式" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">夜间模式</span></button></div></div></header>
 <div class="layout">
-<aside class="toc" aria-label="本章目录"><div class="toc-label">本章目录</div><a class="h2" href="#section-1">1. 为什么盯着 −1，而不是原点？</a><a class="h2" href="#section-2">2. 一个频率怎样变成图上的一个点？</a><a class="h2" href="#section-3">3. 先统一轮廓和计数方向</a><a class="h2" href="#section-4">4. 例一：三个开环稳定极点，为什么增益过大反而失稳？</a><a class="h3" href="#section-5">4.1 模型与 P 的数值</a><a class="h3" href="#section-6">4.2 先算负实轴交点</a><a class="h3" href="#section-7">4.3 对照三张图数环绕</a><a class="h3" href="#section-8">4.4 用闭环根独立核对</a><a class="h3" href="#section-9">4.5 动手实验：频率点与闭环极点一起看</a><a class="h2" href="#section-10">5. 例二：开环不稳定，为什么闭环仍然可能稳定？</a><a class="h3" href="#section-11">5.1 先数 P，不沿用上例的结论</a><a class="h3" href="#section-12">5.2 这条曲线为什么是圆？</a><a class="h3" href="#section-13">5.3 三种增益，对照圆与闭环根</a><a class="h3" href="#section-14">5.4 动手实验：跨过 K=1</a><a class="h2" href="#section-15">6. 为什么积分器需要额外处理？</a><a class="h2" href="#section-16">7. 与 Bode 和稳定裕度的关系</a><a class="h2" href="#section-17">不包围关键点，到底意味着什么？先固定 P 再回答</a><a class="h3" href="#section-18">先预测，再展开核对</a><a class="h2" href="#section-19">8. MATLAB：两条独立路线核对</a><a class="h2" href="#section-20">9. 练习与提示</a></aside>
+<aside class="toc" aria-label="本章目录"><div class="toc-label">本章目录</div><a class="h2" href="#section-1">1. 为什么盯着 −1，而不是原点？</a><a class="h2" href="#section-2">2. 一个频率怎样变成图上的一个点？</a><a class="h2" href="#section-3">3. 先统一轮廓和计数方向</a><a class="h2" href="#section-4">4. 例一：三个开环稳定极点，为什么增益过大反而失稳？</a><a class="h3" href="#section-5">4.1 模型与 P 的数值</a><a class="h3" href="#section-6">4.2 先算负实轴交点</a><a class="h3" href="#section-7">4.3 对照三张图数环绕</a><a class="h3" href="#section-8">4.4 用闭环根独立核对</a><a class="h3" href="#section-9">4.5 动手实验：频率点与闭环极点一起看</a><a class="h2" href="#section-10">5. 例二：开环不稳定，为什么闭环仍然可能稳定？</a><a class="h3" href="#section-11">5.1 先数 P，不沿用上例的结论</a><a class="h3" href="#section-12">5.2 这条曲线为什么是圆？</a><a class="h3" href="#section-13">5.3 三种增益，对照圆与闭环根</a><a class="h3" href="#section-14">5.4 动手实验：跨过 $K=1$</a><a class="h2" href="#section-15">6. 为什么积分器需要额外处理？</a><a class="h2" href="#section-16">7. 与 Bode 和稳定裕度的关系</a><a class="h2" href="#section-17">不包围关键点，到底意味着什么？先固定 P 再回答</a><a class="h3" href="#section-18">先预测，再展开核对</a><a class="h2" href="#section-19">8. MATLAB：两条独立路线核对</a><a class="h2" href="#section-20">9. 练习与提示</a></aside>
 <main class="main" id="content"><div class="eyebrow">第 13 课 / 课程讲解</div><div class="chapter-tabs"><a class="active" href="13-Nyquist稳定判据.html">课程讲解</a><a class="" href="../reviews/13-Nyquist稳定判据.html">复习笔记</a><a class="" href="../formulas/13-Nyquist稳定判据.html">公式手册</a></div><article class="prose"><h1>第 13 课：Nyquist 稳定判据——沿着曲线判断闭环稳定性</h1>
 <blockquote>
 <p>阶段 0 · 先看清复平面上的点、方向和包围，再用 P、N、Z 判断闭环根数。</p>
@@ -29,11 +29,11 @@ $$</p>
 <p>因此 −1 是关键点：环路映射到这里，闭环特征式就变成零。这里的 −1 是复数 −1+j0，既有幅值 1，又有 −180° 相位。</p>
 <p>要分清两个平面：s 平面中的横坐标表示极点实部，单位通常为 s⁻¹；L 平面画的是环路复数值，横纵坐标是其实部与虚部。<strong>Nyquist 曲线不是机器人位置轨迹，也不是闭环极点的轨迹。</strong></p>
 <h2 id="section-2">2. 一个频率怎样变成图上的一个点？</h2>
-<p>令 s=jω，计算 L(jω)，再画到坐标：</p>
+<p>令 $s=jω$，计算 L(jω)，再画到坐标：</p>
 <p>$$
 \bigl(\operatorname{Re}L(j\omega),\;\operatorname{Im}L(j\omega)\bigr).
 $$</p>
-<p>以稍后使用的模型为例，在 ω=1 rad/s 时：</p>
+<p>以稍后使用的模型为例，在 $ω=1$ rad/s 时：</p>
 <p>$$
 \begin{aligned}
 L(s)&amp;=\frac{K}{(s+1)^3},\\
@@ -42,7 +42,7 @@ L(j)&amp;=\frac{K}{-2+2j}
 =-\frac K4-j\frac K4.
 \end{aligned}
 $$</p>
-<p>若 K=4，图上就是 (−1,−1)，不是关键点 (−1,0)。横坐标都为 −1 不代表曲线穿过关键点。连续改变频率，就得到一条曲线。</p>
+<p>若 $K=4$，图上就是 (−1,−1)，不是关键点 (−1,0)。横坐标都为 −1 不代表曲线穿过关键点。连续改变频率，就得到一条曲线。</p>
 <p>实系数模型满足共轭关系：</p>
 <p>$$
 L(-j\omega)=\overline{L(j\omega)}.
@@ -81,15 +81,15 @@ $$</p>
 <p>$$
 \boxed{N=Z-P}\qquad\Longleftrightarrow\qquad\boxed{Z=P+N}.
 $$</p>
-<p>为了严格稳定，需要 Z=0，并且没有虚轴闭环根，也没有被输入输出相消隐藏的不稳定内部模态。不同教材可能把逆时针规定为正，届时公式符号随之变化；务必把公式与方向一起使用。</p>
+<p>为了严格稳定，需要 $Z=0$，并且没有虚轴闭环根，也没有被输入输出相消隐藏的不稳定内部模态。不同教材可能把逆时针规定为正，届时公式符号随之变化；务必把公式与方向一起使用。</p>
 <p>“净”意味着顺、逆方向会抵消，不是看到两段弧线就数成两圈。曲线如果穿过 −1，环绕数在该参数处不能按普通情况定义，要单独处理稳定边界。</p>
 <h2 id="section-4">4. 例一：三个开环稳定极点，为什么增益过大反而失稳？</h2>
 <h3 id="section-5">4.1 模型与 P 的数值</h3>
-<p>取 K&gt;0，单位负反馈：</p>
+<p>取 $K&gt;0$，单位负反馈：</p>
 <p>$$
 L(s)=\frac{K}{(s+1)^3}.
 $$</p>
-<p>三个开环极点都在 s=−1，因此：</p>
+<p>三个开环极点都在 $s=−1$，因此：</p>
 <p>$$
 P=0.
 $$</p>
@@ -122,7 +122,7 @@ $$</p>
 $$</p>
 <p>K 变大时，曲线整体按比例放大；负实轴交点向左移动。<strong>交点只是读图线索，最终仍要检查完整曲线及方向。</strong></p>
 <h3 id="section-7">4.3 对照三张图数环绕</h3>
-<p><img alt="K=4、8、12 的完整 Nyquist 曲线；三图坐标比例一致" src="../courses/13-Nyquist稳定判据/media/nyquist-cubic-dark.svg"/></p>
+<p><img alt="MATHTOKENZX18ZX、8、12 的完整 Nyquist 曲线；三图坐标比例一致" src="../courses/13-Nyquist稳定判据/media/nyquist-cubic-dark.svg"/></p>
 <table>
 <thead>
 <tr>
@@ -136,8 +136,8 @@ $$</p>
 <tr>
 <td>4</td>
 <td>−0.5</td>
-<td>N=0</td>
-<td>Z=0，闭环严格稳定</td>
+<td>$N=0$</td>
+<td>$Z=0$，闭环严格稳定</td>
 </tr>
 <tr>
 <td>8</td>
@@ -148,12 +148,12 @@ $$</p>
 <tr>
 <td>12</td>
 <td>−1.5</td>
-<td>两个顺时针净环绕，N=2</td>
-<td>Z=2，闭环有两个右半平面根</td>
+<td>两个顺时针净环绕，$N=2$</td>
+<td>$Z=2$，闭环有两个右半平面根</td>
 </tr>
 </tbody>
 </table>
-<p>K=12 时为什么会是两圈？正、负频率的完整映射各形成一段包围关键点的回路；沿频率方向追踪，会发现两段都贡献顺时针环绕。不要把它想成“只画一个椭圆，所以最多一圈”。交互会同时给出路径数值环绕与闭环根，便于核对。</p>
+<p>$K=12$ 时为什么会是两圈？正、负频率的完整映射各形成一段包围关键点的回路；沿频率方向追踪，会发现两段都贡献顺时针环绕。不要把它想成“只画一个椭圆，所以最多一圈”。交互会同时给出路径数值环绕与闭环根，便于核对。</p>
 <h3 id="section-8">4.4 用闭环根独立核对</h3>
 <p>特征方程为：</p>
 <p>$$
@@ -167,38 +167,38 @@ $$</p>
 <p>$$
 1,\quad3,\quad\frac{8-K}{3},\quad1+K.
 $$</p>
-<p>在 K&gt;0 的约定下，全正要求：</p>
+<p>在 $K&gt;0$ 的约定下，全正要求：</p>
 <p>$$
 0&lt;K&lt;8.
 $$</p>
-<p>若 K=8，可以直接分解：</p>
+<p>若 $K=8$，可以直接分解：</p>
 <p>$$
 (s+3)(s^2+3)=0
 \quad\Longrightarrow\quad
 s=-3,\;\pm j\sqrt3.
 $$</p>
-<p>这同时解释了临界频率为什么也是 √3 rad/s。若不限制 K&gt;0，完整严格稳定区间会是 −1&lt;K&lt;8；本课交互先限定正增益。</p>
-<p>还可以直接求三根。令 ρ=K^(1/3)，有：</p>
+<p>这同时解释了临界频率为什么也是 √3 rad/s。若不限制 $K&gt;0$，完整严格稳定区间会是 $−1&lt;K&lt;8$；本课交互先限定正增益。</p>
+<p>还可以直接求三根。令 $ρ=K^(1/3)$，有：</p>
 <p>$$
 s_1=-1-\rho,\qquad
 s_{2,3}=-1+\frac\rho2\pm j\frac{\sqrt3\rho}{2}.
 $$</p>
-<p>ρ&gt;2，也就是 K&gt;8 时，一对共轭根的实部变正。K=12 时约为 0.145±1.983j，另一个根约 −3.289。数值与 Z=2 一致。</p>
+<p>$ρ&gt;2$，也就是 $K&gt;8$ 时，一对共轭根的实部变正。$K=12$ 时约为 0.145±1.983j，另一个根约 −3.289。数值与 $Z=2$ 一致。</p>
 <h3 id="section-9">4.5 动手实验：频率点与闭环极点一起看</h3>
-<p>先选 K=4、8、12 预设，再拖动频率。左图是 L 平面，黄色点显示当前正频率对应的环路复数；右图是闭环极点。勾选“放大 −1 附近”只改变视野，不改变 N、P、Z。关闭放大可查看全部曲线。</p>
+<p>先选 $K=4$、8、12 预设，再拖动频率。左图是 L 平面，黄色点显示当前正频率对应的环路复数；右图是闭环极点。勾选“放大 −1 附近”只改变视野，不改变 N、P、Z。关闭放大可查看全部曲线。</p>
 <div class="demo" data-demo="nyquist-explorer" data-model="cubic"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>
-<p>先自己预测，再操作：ω=0 时曲线从哪里出发？ω=1 时为什么 K=4 对应 (−1,−1)？K 接近 8 时，一对闭环极点怎样移动？</p>
+<p>先自己预测，再操作：$ω=0$ 时曲线从哪里出发？$ω=1$ 时为什么 $K=4$ 对应 (−1,−1)？K 接近 8 时，一对闭环极点怎样移动？</p>
 <h2 id="section-10">5. 例二：开环不稳定，为什么闭环仍然可能稳定？</h2>
 <h3 id="section-11">5.1 先数 P，不沿用上例的结论</h3>
 <p>换成：</p>
 <p>$$
 L(s)=\frac K{s-1},\qquad K&gt;0.
 $$</p>
-<p>开环在 +1 有一个极点，所以 P=1。要使闭环 Z=0，需要：</p>
+<p>开环在 +1 有一个极点，所以 $P=1$。要使闭环 $Z=0$，需要：</p>
 <p>$$
 N=Z-P=0-1=-1.
 $$</p>
-<p>负的顺时针计数，表示需要一个逆时针净环绕。因此此时“不包围 −1”反而不够：N=0 会导致 Z=1。</p>
+<p>负的顺时针计数，表示需要一个逆时针净环绕。因此此时“不包围 −1”反而不够：$N=0$ 会导致 $Z=1$。</p>
 <h3 id="section-12">5.2 这条曲线为什么是圆？</h3>
 <p>把复数分母实数化：</p>
 <p>$$
@@ -214,7 +214,7 @@ $$</p>
 \boxed{\left(a+\frac K2\right)^2+b^2=\left(\frac K2\right)^2}.
 $$</p>
 <p>因此圆心是 (−K/2,0)，半径 K/2；最左点是 −K，最右点趋近原点。正频率从 −K 沿下半圆走向原点；连同负频率分支，完整行进方向是逆时针。</p>
-<p><img alt="K=0.5、1、2 的圆形映射，箭头表示完整轮廓方向" src="../courses/13-Nyquist稳定判据/media/nyquist-unstable-dark.svg"/></p>
+<p><img alt="MATHTOKENZX50ZX、1、2 的圆形映射，箭头表示完整轮廓方向" src="../courses/13-Nyquist稳定判据/media/nyquist-unstable-dark.svg"/></p>
 <h3 id="section-13">5.3 三种增益，对照圆与闭环根</h3>
 <p>闭环特征方程可以直接算：</p>
 <p>$$
@@ -235,7 +235,7 @@ $$</p>
 <tr>
 <td>0.5</td>
 <td>在圆外</td>
-<td>N=0，Z=1</td>
+<td>$N=0$，$Z=1$</td>
 <td>+0.5，不稳定</td>
 </tr>
 <tr>
@@ -247,14 +247,14 @@ $$</p>
 <tr>
 <td>2</td>
 <td>在圆内</td>
-<td>N=−1，Z=0</td>
+<td>$N=−1$，$Z=0$</td>
 <td>−1，严格稳定</td>
 </tr>
 </tbody>
 </table>
 <p>这里增加增益能把闭环极点向左推，与上例“增益过大失稳”不同。应根据模型与完整判据分析，不能把“增益越大越危险”当成普遍规律。</p>
-<h3 id="section-14">5.4 动手实验：跨过 K=1</h3>
-<p>观察左图圆是否包含 −1，再看右图极点处于虚轴哪侧。特别比较“曲线穿过 −1”和“极点穿过虚轴”：它们发生在同一增益 K=1。</p>
+<h3 id="section-14">5.4 动手实验：跨过 $K=1$</h3>
+<p>观察左图圆是否包含 −1，再看右图极点处于虚轴哪侧。特别比较“曲线穿过 −1”和“极点穿过虚轴”：它们发生在同一增益 $K=1$。</p>
 <div class="demo" data-demo="nyquist-explorer" data-model="unstable"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>
 <h2 id="section-15">6. 为什么积分器需要额外处理？</h2>
 <p>若开环在原点有积分极点，例如：</p>
@@ -267,7 +267,7 @@ $$</p>
 <p>曲线满足 |L|=1 时，对应 Bode 的增益交越频率；到达负实轴时，对应展开相位为 −180° 的交点。离 −1 多近，是理解增益裕度与相位裕度的入口。</p>
 <p>使用流程：先数开环 P，检查虚轴极点；再看完整方向并求 N；计算 Z 并排除边界；确认稳定后，再讨论稳定裕度。多次交越或开环不稳定时，不能只挑一个正裕度就宣称闭环稳定。</p>
 <h2 id="section-17">不包围关键点，到底意味着什么？先固定 P 再回答</h2>
-<p>保持曲线计数 N=0，分别代入两种开环根数：</p>
+<p>保持曲线计数 $N=0$，分别代入两种开环根数：</p>
 <p>$$
 \begin{aligned}
 P=0:&amp;\quad Z=P+N=0,\\
@@ -275,12 +275,12 @@ P=1:&amp;\quad Z=P+N=1.
 \end{aligned}
 $$</p>
 <p>这两种结果不矛盾：环绕数不是闭环不稳定根数本身，它还要补上开环已有的右半平面极点。下图固定同一个计数结论，直接比较两种 P 的推理路径。</p>
-<p>对于 K/(s−1)，选K=0.5时圆不包围−1，P=1、N=0，所以闭环根+0.5；选K=2时，曲线提供一个逆时针环绕，N=−1，把计数抵消为Z=0，闭环根−1。看图之前先写P，可以避免把开环稳定对象的经验误搬到开环不稳定对象。</p>
+<p>对于 K/(s−1)，选K=0.5时圆不包围−1，$P=1$、$N=0$，所以闭环根+0.5；选K=2时，曲线提供一个逆时针环绕，$N=−1$，把计数抵消为Z=0，闭环根−1。看图之前先写P，可以避免把开环稳定对象的经验误搬到开环不稳定对象。</p>
 <p><img alt="本课数值例子的定量对照图" src="../courses/13-Nyquist稳定判据/media/worked-example-dark.svg"/></p>
 <p><strong>读图与操作</strong>：两个交互选同样“不包围”状态，对比P与Z；再用闭环极点图核对。</p>
 <p><strong>使用条件</strong>：沿本课约定的右半平面顺时针轮廓，N以顺时针为正；边界不套普通环绕数。</p>
 <h3 id="section-18">先预测，再展开核对</h3>
-<p>若 P=2，为使Z=0，需要什么方向、几次净环绕？</p>
+<p>若 $P=2$，为使Z=0，需要什么方向、几次净环绕？</p>
 <details><summary>查看思路与答案</summary>
 <p>需要N=−2，也就是两个逆时针净环绕；还要排除映射穿过−1和闭环虚轴根。</p>
 </details>
@@ -300,14 +300,23 @@ $$</p>
 <p>Nyquist 绘图核对曲线，直接求根核对右半平面根数。两种方法应一致。示例未由 MATLAB 实际执行；仅用基础 MATLAB 的 roots 也能独立核对第一模型的根。</p>
 <h2 id="section-20">9. 练习与提示</h2>
 <ol>
-<li>对第一个模型，在 ω=0、1、√3、很大时，分别写出曲线位置或极限。</li>
+<li>对第一个模型，在 $ω=0$、1、√3、很大时，分别写出曲线位置或极限。</li>
 <li>不看图，用 Routh 判据求第一个模型的正增益严格稳定区间。</li>
-<li>对第二个模型，手算 K=3 时的圆心、半径、N、P、Z 和闭环极点。</li>
-<li>为什么 P=1、N=0 时，曲线没有包围 −1 也不能认为稳定？</li>
-<li>K=8 与 K=1 两个边界分别对应什么闭环根？为何不能用普通整数环绕数直接判定边界？</li>
+<li>对第二个模型，手算 $K=3$ 时的圆心、半径、N、P、Z 和闭环极点。</li>
+<li>为什么 $P=1$、$N=0$ 时，曲线没有包围 −1 也不能认为稳定？</li>
+<li>$K=8$ 与 $K=1$ 两个边界分别对应什么闭环根？为何不能用普通整数环绕数直接判定边界？</li>
 </ol>
 <details><summary>展开自查提示（先自己做）</summary>
-<p>第一模型：L(0)=K，L(j)=−K/4−jK/4，L(j√3)=−K/8，高频趋于 0。正增益稳定区间 0&lt;K&lt;8。第二模型 K=3 时圆心 −1.5、半径 1.5，N=−1、P=1、Z=0，闭环根 −2。P=1、N=0 则 Z=1。</p>
+<p><strong>第一模型：</strong></p>
+<p>$$
+L(0)=K,\qquad L(j)=-\frac K4-j\frac K4,\qquad L(j\sqrt3)=-\frac K8,\qquad L(j\omega)\to0\quad(\omega\to\infty).
+$$</p>
+<p>正增益稳定区间为 $0&lt;K&lt;8$。</p>
+<p><strong>第二模型：</strong>取 $K=3$，Nyquist 圆心为 $-1.5$、半径为 $1.5$。按本课环绕方向约定：</p>
+<p>$$
+N=-1,\qquad P=1,\qquad Z=P+N=0.
+$$</p>
+<p>闭环极点为 $-2$，所以闭环稳定。若同一开环系统对应 $N=0$，则 $Z=1$，闭环仍有一个右半平面极点。</p>
 </details>
 </article><div class="page-footer"><a href="12-频率响应与Bode图.html">← 上一课</a><a href="14-增益裕度与相位裕度.html">下一课 →</a></div></main>
 <nav class="sidebar" aria-label="课程总目录"><div class="sidebar-title">课程总目录</div><a class="nav-home" href="../index.html">首页 · 课程目录</a><div class="group-label">按学习阶段浏览</div><details class="nav-phase" open><summary><span class="phase-title">阶段 0｜经典控制基础与补桥</span><small>第 1–16 课：反馈、PID、稳定性与频域设计</small></summary><details class="nav-course"><summary><span class="course-number">第 1 课</span><span class="course-title">反馈控制与第一个 PD 控制器</span></summary><div class="nav-course-links"><a class="" href="01-反馈控制.html">讲解</a><a class="" href="../reviews/01-反馈控制.html">复习</a><a class="" href="../formulas/01-反馈控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 2 课</span><span class="course-title">二阶系统、阻尼比与超调量</span></summary><div class="nav-course-links"><a class="" href="02-二阶系统.html">讲解</a><a class="" href="../reviews/02-二阶系统.html">复习</a><a class="" href="../formulas/02-二阶系统.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 3 课</span><span class="course-title">拉普拉斯变换与传递函数</span></summary><div class="nav-course-links"><a class="" href="03-传递函数.html">讲解</a><a class="" href="../reviews/03-传递函数.html">复习</a><a class="" href="../formulas/03-传递函数.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 4 课</span><span class="course-title">极点、零点与系统稳定性</span></summary><div class="nav-course-links"><a class="" href="04-极点与零点.html">讲解</a><a class="" href="../reviews/04-极点与零点.html">复习</a><a class="" href="../formulas/04-极点与零点.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 5 课</span><span class="course-title">时间响应指标与 PD 控制器参数设计</span></summary><div class="nav-course-links"><a class="" href="05-PD参数设计.html">讲解</a><a class="" href="../reviews/05-PD参数设计.html">复习</a><a class="" href="../formulas/05-PD参数设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 6 课</span><span class="course-title">积分控制、稳态误差与积分饱和</span></summary><div class="nav-course-links"><a class="" href="06-积分控制.html">讲解</a><a class="" href="../reviews/06-积分控制.html">复习</a><a class="" href="../formulas/06-积分控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 7 课</span><span class="course-title">稳态误差与终值定理</span></summary><div class="nav-course-links"><a class="" href="07-稳态误差与终值定理.html">讲解</a><a class="" href="../reviews/07-稳态误差与终值定理.html">复习</a><a class="" href="../formulas/07-稳态误差与终值定理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 8 课</span><span class="course-title">PID 参数整定与积分抗饱和</span></summary><div class="nav-course-links"><a class="" href="08-PID整定与抗饱和.html">讲解</a><a class="" href="../reviews/08-PID整定与抗饱和.html">复习</a><a class="" href="../formulas/08-PID整定与抗饱和.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 9 课</span><span class="course-title">数字 PID 实现</span></summary><div class="nav-course-links"><a class="" href="09-数字PID实现.html">讲解</a><a class="" href="../reviews/09-数字PID实现.html">复习</a><a class="" href="../formulas/09-数字PID实现.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 10 课</span><span class="course-title">Routh稳定判据</span></summary><div class="nav-course-links"><a class="" href="10-Routh稳定判据.html">讲解</a><a class="" href="../reviews/10-Routh稳定判据.html">复习</a><a class="" href="../formulas/10-Routh稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 11 课</span><span class="course-title">根轨迹与增益设计</span></summary><div class="nav-course-links"><a class="" href="11-根轨迹与增益设计.html">讲解</a><a class="" href="../reviews/11-根轨迹与增益设计.html">复习</a><a class="" href="../formulas/11-根轨迹与增益设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 12 课</span><span class="course-title">频率响应与 Bode 图</span></summary><div class="nav-course-links"><a class="" href="12-频率响应与Bode图.html">讲解</a><a class="" href="../reviews/12-频率响应与Bode图.html">复习</a><a class="" href="../formulas/12-频率响应与Bode图.html">公式</a></div></details><details class="nav-course" open><summary><span class="course-number">第 13 课</span><span class="course-title">Nyquist 稳定判据——沿着曲线判断闭环稳定性</span></summary><div class="nav-course-links"><a class="active" href="13-Nyquist稳定判据.html">讲解</a><a class="" href="../reviews/13-Nyquist稳定判据.html">复习</a><a class="" href="../formulas/13-Nyquist稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 14 课</span><span class="course-title">增益裕度与相位裕度</span></summary><div class="nav-course-links"><a class="" href="14-增益裕度与相位裕度.html">讲解</a><a class="" href="../reviews/14-增益裕度与相位裕度.html">复习</a><a class="" href="../formulas/14-增益裕度与相位裕度.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 15 课</span><span class="course-title">超前与滞后校正</span></summary><div class="nav-course-links"><a class="" href="15-超前与滞后校正.html">讲解</a><a class="" href="../reviews/15-超前与滞后校正.html">复习</a><a class="" href="../formulas/15-超前与滞后校正.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 16 课</span><span class="course-title">闭环带宽、延迟与鲁棒性</span></summary><div class="nav-course-links"><a class="" href="16-闭环带宽与延迟鲁棒性.html">讲解</a><a class="" href="../reviews/16-闭环带宽与延迟鲁棒性.html">复习</a><a class="" href="../formulas/16-闭环带宽与延迟鲁棒性.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 1｜数学与模型衔接</span><small>第 17–19 课：矩阵、特征值、传递函数与状态空间</small></summary><details class="nav-course"><summary><span class="course-number">第 17 课</span><span class="course-title">矩阵与状态向量——现代控制的数学语言</span></summary><div class="nav-course-links"><a class="" href="17-矩阵与状态向量.html">讲解</a><a class="" href="../reviews/17-矩阵与状态向量.html">复习</a><a class="" href="../formulas/17-矩阵与状态向量.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 18 课</span><span class="course-title">特征值与系统动态</span></summary><div class="nav-course-links"><a class="" href="18-特征值与系统动态.html">讲解</a><a class="" href="../reviews/18-特征值与系统动态.html">复习</a><a class="" href="../formulas/18-特征值与系统动态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 19 课</span><span class="course-title">传递函数到状态空间</span></summary><div class="nav-course-links"><a class="" href="19-传递函数到状态空间.html">讲解</a><a class="" href="../reviews/19-传递函数到状态空间.html">复习</a><a class="" href="../formulas/19-传递函数到状态空间.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 2｜现代线性控制核心</span><small>第 20–31 课：状态响应、反馈、LQR、估计与离散综合</small></summary><details class="nav-course"><summary><span class="course-number">第 20 课</span><span class="course-title">状态空间基础</span></summary><div class="nav-course-links"><a class="" href="20-状态空间基础.html">讲解</a><a class="" href="../reviews/20-状态空间基础.html">复习</a><a class="" href="../formulas/20-状态空间基础.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 21 课</span><span class="course-title">相平面与状态轨迹</span></summary><div class="nav-course-links"><a class="" href="21-相平面与状态轨迹.html">讲解</a><a class="" href="../reviews/21-相平面与状态轨迹.html">复习</a><a class="" href="../formulas/21-相平面与状态轨迹.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 22 课</span><span class="course-title">连续系统离散化</span></summary><div class="nav-course-links"><a class="" href="22-连续系统离散化.html">讲解</a><a class="" href="../reviews/22-连续系统离散化.html">复习</a><a class="" href="../formulas/22-连续系统离散化.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 23 课</span><span class="course-title">可控性与可达状态</span></summary><div class="nav-course-links"><a class="" href="23-可控性与可达状态.html">讲解</a><a class="" href="../reviews/23-可控性与可达状态.html">复习</a><a class="" href="../formulas/23-可控性与可达状态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 24 课</span><span class="course-title">线性系统的Lyapunov稳定性</span></summary><div class="nav-course-links"><a class="" href="24-线性系统的Lyapunov稳定性.html">讲解</a><a class="" href="../reviews/24-线性系统的Lyapunov稳定性.html">复习</a><a class="" href="../formulas/24-线性系统的Lyapunov稳定性.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 25 课</span><span class="course-title">状态反馈与极点配置</span></summary><div class="nav-course-links"><a class="" href="25-状态反馈与极点配置.html">讲解</a><a class="" href="../reviews/25-状态反馈与极点配置.html">复习</a><a class="" href="../formulas/25-状态反馈与极点配置.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 26 课</span><span class="course-title">LQR最优状态反馈</span></summary><div class="nav-course-links"><a class="" href="26-LQR最优状态反馈.html">讲解</a><a class="" href="../reviews/26-LQR最优状态反馈.html">复习</a><a class="" href="../formulas/26-LQR最优状态反馈.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 27 课</span><span class="course-title">状态反馈的参考跟踪</span></summary><div class="nav-course-links"><a class="" href="27-状态反馈的参考跟踪.html">讲解</a><a class="" href="../reviews/27-状态反馈的参考跟踪.html">复习</a><a class="" href="../formulas/27-状态反馈的参考跟踪.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 28 课</span><span class="course-title">可观测性与输出信息</span></summary><div class="nav-course-links"><a class="" href="28-可观测性与输出信息.html">讲解</a><a class="" href="../reviews/28-可观测性与输出信息.html">复习</a><a class="" href="../formulas/28-可观测性与输出信息.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 29 课</span><span class="course-title">Luenberger状态观测器</span></summary><div class="nav-course-links"><a class="" href="29-Luenberger状态观测器.html">讲解</a><a class="" href="../reviews/29-Luenberger状态观测器.html">复习</a><a class="" href="../formulas/29-Luenberger状态观测器.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 30 课</span><span class="course-title">观测器反馈与分离原理</span></summary><div class="nav-course-links"><a class="" href="30-观测器反馈与分离原理.html">讲解</a><a class="" href="../reviews/30-观测器反馈与分离原理.html">复习</a><a class="" href="../formulas/30-观测器反馈与分离原理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 31 课</span><span class="course-title">离散状态反馈与综合设计</span></summary><div class="nav-course-links"><a class="" href="31-离散状态反馈与综合设计.html">讲解</a><a class="" href="../reviews/31-离散状态反馈与综合设计.html">复习</a><a class="" href="../formulas/31-离散状态反馈与综合设计.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 3｜非线性控制进阶</span><small>后续计划：Lyapunov、LaSalle 与非线性控制</small></summary><div class="phase-coming">该阶段课程将在学习进度推进后加入。</div></details><details class="nav-phase"><summary><span class="phase-title">阶段 4｜机器人与车辆实践</span><small>控制器综合设计、MATLAB 与 C++ 实现</small></summary><details class="nav-course"><summary><span class="course-number">第 32 课</span><span class="course-title">机器人控制器综合设计</span></summary><div class="nav-course-links"><a class="" href="32-机器人控制器综合设计.html">讲解</a><a class="" href="../reviews/32-机器人控制器综合设计.html">复习</a><a class="" href="../formulas/32-机器人控制器综合设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 33 课</span><span class="course-title">MATLAB 仿真与 C++ 控制循环</span></summary><div class="nav-course-links"><a class="" href="33-MATLAB仿真与C++控制循环.html">讲解</a><a class="" href="../reviews/33-MATLAB仿真与C++控制循环.html">复习</a><a class="" href="../formulas/33-MATLAB仿真与C++控制循环.html">公式</a></div></details></details></nav>

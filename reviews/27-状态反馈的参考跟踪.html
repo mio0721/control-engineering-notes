@@ -17,21 +17,21 @@
 <p>$$
 Ax_r+Bu_r=0,\ Cx_r+Du_r=r,\quad u=u_r-K(x-x_r).
 $$</p>
-<p>常值参考时先解平衡。若D=0、Acl=A−BK可逆、对应静态通道非零，则N̄=−[CAcl⁻¹B]⁻¹。</p>
+<p>常值参考时先解平衡。若 $D=0$、$A_{cl}=A-BK$ 可逆且对应静态通道非零，则 $\bar N=-[C(A-BK)^{-1}B]^{-1}$。</p>
 <p>$$
 u=\ddot q_r-k_p(q-q_r)-k_d(\dot q-\dot q_r)\quad(q̈=u).
 $$</p>
 <p>理想轨迹跟踪要求可用的位置、速度参考和加速度前馈；目标跳变时导数不能直接当有限值使用。</p>
 <h2 id="section-1">应用自查</h2>
 <ol>
-<li>J=2、b=4、k=10时，保持q=0.2需要多少力矩？</li>
+<li>$J=2$、$b=4$、$k=10$时，保持q=0.2需要多少力矩？</li>
 <li>qᵣ=0.5sin(2t)时，速度、加速度参考是什么？</li>
 <li>为什么固定目标的−Kd q̇与使用速度误差在运动目标时不同？</li>
 <li>前馈能否自动补偿所有未知外扰？</li>
 </ol>
 <details><summary>展开提示</summary>
 <ol>
-<li>2 N·m。2. q̇ᵣ=cos(2t)，q̈ᵣ=−2sin(2t)。3. 后者含参考速度项。4. 不能，未知量需要反馈、积分或估计等处理。</li>
+<li>$2\,\mathrm{N\cdot m}$。2. $q_r=0.5\sin(2t)$，所以 $\dot q_r=\cos(2t)$、$\ddot q_r=-2\sin(2t)$。3. 后者含参考速度项。4. 不能，未知量需要反馈、积分或估计等处理。</li>
 </ol>
 </details>
 </article><div class="page-footer"><a href="26-LQR最优状态反馈.html">← 上一课</a><a href="28-可观测性与输出信息.html">下一课 →</a></div></main>
