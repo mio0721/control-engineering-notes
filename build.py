@@ -86,8 +86,9 @@ PHASES = (
     ('stage0', '阶段 0｜经典控制基础与补桥', '第 1–16 课：反馈、PID、稳定性与频域设计'),
     ('stage1', '阶段 1｜数学与模型衔接', '第 17–19 课：矩阵、特征值、传递函数与状态空间'),
     ('stage2', '阶段 2｜现代线性控制核心', '第 20–31 课：状态响应、反馈、LQR、估计与离散综合'),
-    ('stage3', '阶段 3｜非线性控制进阶', '后续计划：Lyapunov、LaSalle 与非线性控制'),
-    ('stage4', '阶段 4｜机器人与车辆实践', '控制器综合设计、MATLAB 与 C++ 实现'),
+    ('stage3', '阶段 3｜非线性控制进阶', '第 32–37 课：局部分析、稳定性证明与非线性控制设计'),
+    ('stage4', '阶段 4：状态估计与约束控制', '第 38–46 课：Kalman、EKF、滚动优化、MPC 与车辆跟踪'),
+    ('stage5', '阶段 5：工程实现与综合实验', '暂留空，后续补充'),
 )
 def phase_key(course: Course) -> str:
     metadata=course.folder/'course.json'
@@ -196,6 +197,7 @@ def render_markdown(raw: str,course: Course,source: Path):
 def generate_shell(page:Path,title:str,crumb:str,body:str,toc:list,course:Course|None,section:str|None,scripts:list[Path],courses:list[Course])->str:
     stylesheet=rel(page,ROOT/'assets/style.css')
     theme_script=rel(page,ROOT/'assets/theme.js')
+    image_viewer_script=rel(page,ROOT/'assets/image-viewer.js')
     math_script=rel(page,ROOT/'assets/mathjax-tex-svg.js')
     demo_core=rel(page,ROOT/'assets/demo-core.js')
     section_titles={"lesson":"讲解","review":"复习","formulas":"公式"}
@@ -257,7 +259,7 @@ def generate_shell(page:Path,title:str,crumb:str,body:str,toc:list,course:Course
 <script>try{{document.documentElement.dataset.theme=localStorage.getItem('robot-note-theme')||'light'}}catch(e){{document.documentElement.dataset.theme='light'}}</script>
 <link rel="stylesheet" href="{stylesheet}">{demo_css}
 <script>window.MathJax={{tex:{{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true,packages:{{'[+]':['base','ams']}}}},svg:{{fontCache:'local'}},options:{{skipHtmlTags:['script','noscript','style','textarea','pre','code']}}}};</script>
-<script defer src="{math_script}"></script><script defer src="{theme_script}"></script>
+<script defer src="{math_script}"></script><script defer src="{theme_script}"></script><script defer src="{image_viewer_script}"></script>
 </head><body>
 <header class="mast"><div class="mast-inner"><a class="brand" href="{rel(page,ROOT/'index.html')}">机器人控制理论笔记</a><div class="top-actions"><span class="top-indicator">已整理 {sum('lesson' in x.available for x in courses)} 课</span><button id="themeToggle" type="button" class="theme-toggle" aria-label="切换日间与夜间模式" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">夜间模式</span></button></div></div></header>
 <div class="layout">
@@ -273,7 +275,7 @@ def make_index(courses:list[Course]):
         links=''.join(f'<a href="{rel(page,output_path(course,typ))}">{label} →</a>' for typ,_,label,_ in SECTIONS if typ in course.available)
         cards.append(f'<div class="course-row"><div><span class="chapter-index">{escape(course.number_text)}</span><h3>{escape(course.title)}</h3><p>{escape(course.goal)}</p></div><div class="course-links">{links}</div></div>')
     body='<h1>控制工程 · 总课程路线</h1><p>阶段 0、1、2 已整理；阶段 3 为后续非线性进阶计划，阶段 4 保留机器人与车辆实践材料。网页存在不表示已经学完。</p>'
-    body+='<div class="banner"><strong>按阶段顺序学习</strong><p>经典控制 → 数学衔接 → 现代线性控制 → 非线性进阶 → 机器人与车辆实践。左侧阶段可折叠；页底上一课、下一课按此路线前进。课号按学习顺序连续排列。</p></div>'
+    body+='<div class="banner"><strong>按阶段顺序学习</strong><p>经典控制 → 数学衔接 → 现代线性控制 → 非线性进阶 → 状态估计与约束控制。左侧阶段可折叠；页底上一课、下一课按此路线前进。课号按学习顺序连续排列。</p></div>'
     body+='<h2 id="course-index">分阶段课程目录</h2>'
     for index,(key,title,note) in enumerate(PHASES):
         items=[(c,card) for c,card in zip(courses,cards) if phase_key(c)==key]
@@ -294,7 +296,7 @@ def clean_stale(courses:list[Course]):
             if html not in expected:html.unlink()
 
 def main():
-    courses=discover_courses()
+    courses=[c for c in discover_courses() if not json.loads((c.folder/'course.json').read_text(encoding='utf8')).get('hidden',False)]
     clean_stale(courses)
     n=0;demos=set()
     for course in courses:

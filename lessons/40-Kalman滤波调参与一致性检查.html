@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
+<link rel="icon" href="../assets/robot-icon.svg" type="image/svg+xml">
+<title>第 40 课 · Kalman滤波调参与一致性检查 · 课程讲解｜机器人控制理论笔记</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('robot-note-theme')||'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
+<link rel="stylesheet" href="../assets/style.css">
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true,packages:{'[+]':['base','ams']}},svg:{fontCache:'local'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
+<script defer src="../assets/mathjax-tex-svg.js"></script><script defer src="../assets/theme.js"></script><script defer src="../assets/image-viewer.js"></script>
+</head><body>
+<header class="mast"><div class="mast-inner"><a class="brand" href="../index.html">机器人控制理论笔记</a><div class="top-actions"><span class="top-indicator">已整理 46 课</span><button id="themeToggle" type="button" class="theme-toggle" aria-label="切换日间与夜间模式" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">夜间模式</span></button></div></div></header>
+<div class="layout">
+<aside class="toc" aria-label="本章目录"><div class="toc-label">本章目录</div><a class="h2" href="#section-1">1. P0、Q、R 分别管什么？</a><a class="h2" href="#section-2">2. 从随机加速度推导 Q</a><a class="h2" href="#section-3">3. 怎样估计 R？</a><a class="h2" href="#section-4">4. 创新不只是调参曲线</a><a class="h2" href="#section-5">5. 丢帧与异常值怎样处理？</a><a class="h2" href="#section-6">6. 自测与记录表</a><a class="h2" href="#section-7">图示核对</a></aside>
+<main class="main" id="content"><div class="eyebrow">第 40 课 / 课程讲解</div><div class="chapter-tabs"><a class="active" href="40-Kalman滤波调参与一致性检查.html">课程讲解</a><a class="" href="../reviews/40-Kalman滤波调参与一致性检查.html">复习笔记</a><a class="" href="../formulas/40-Kalman滤波调参与一致性检查.html">公式手册</a></div><article class="prose"><h1>第 40 课：Kalman滤波调参与一致性检查</h1>
+<blockquote>
+<p>阶段 4 · 从噪声物理来源设置 Q、R，用创新检查估计器是否过度自信。</p>
+</blockquote>
+<h2 id="section-1">1. P0、Q、R 分别管什么？</h2>
+<p>$P_0$ 描述初始状态误差。$Q$ 决定每次预测引入多少模型不确定性，$R$ 描述测量可信程度。把三个矩阵都设得很小不会让系统更准确，只会让估计器声称自己很确定。</p>
+<p>如果车辆实际加速，而模型假设常速度，过小的 $Q$ 会使估计落后。测量很吵时减小 $R$，会让位置跟随噪声，并通过交叉协方差污染速度估计。</p>
+<h2 id="section-2">2. 从随机加速度推导 Q</h2>
+<p>每个采样区间内，令未知加速度 $a_k$ 为独立随机常数，方差为 $\sigma_a^2$，则</p>
+<p>$$
+G=\begin{bmatrix}T_s^2/2\\T_s\end{bmatrix},\qquad
+Q=G\sigma_a^2G^{\mathsf T}
+=\sigma_a^2\begin{bmatrix}T_s^4/4&amp;T_s^3/2\\T_s^3/2&amp;T_s^2\end{bmatrix}.
+$$</p>
+<p>取 $T_s=0.1$ s、$\sigma_a=0.5$ m/s²，得到</p>
+<p>$$
+Q=\begin{bmatrix}0.00000625&amp;0.000125\\0.000125&amp;0.0025\end{bmatrix}.
+$$</p>
+<p>若假设的是连续时间白加速度、谱密度为 $q_a$，精确离散协方差改为</p>
+<p>$$
+Q=q_a\begin{bmatrix}T_s^3/3&amp;T_s^2/2\\T_s^2/2&amp;T_s\end{bmatrix}.
+$$</p>
+<p>两者假设和参数单位不同，不能混用同一个数值。这也解释了为什么采样周期改变时不能照搬原 Q。</p>
+<h2 id="section-3">3. 怎样估计 R？</h2>
+<p>让传感器观察一个已知固定目标，记录读数，先估计均值偏置，再计算去均值后的方差。若真实目标也在动，直接对读数求方差会把真实运动算成噪声。</p>
+<div class="code-panel"><div class="code-label">MATLAB</div><pre class="code-highlight"><code><span class="nb">rng</span><span class="p">(</span><span class="mi">7</span><span class="p">);</span><span class="n">z</span><span class="p">=</span><span class="mi">5</span><span class="o">+</span><span class="mf">.2</span><span class="o">*</span><span class="nb">randn</span><span class="p">(</span><span class="mi">2000</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span>
+<span class="n">bias</span><span class="p">=</span><span class="nb">mean</span><span class="p">(</span><span class="n">z</span><span class="p">)</span><span class="o">-</span><span class="mi">5</span><span class="p">;</span><span class="n">Rhat</span><span class="p">=</span><span class="nb">var</span><span class="p">(</span><span class="n">z</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span>
+<span class="nb">fprintf</span><span class="p">(</span><span class="s">'bias=%g, R=%g\n'</span><span class="p">,</span><span class="n">bias</span><span class="p">,</span><span class="n">Rhat</span><span class="p">);</span></code></pre></div>
+<h2 id="section-4">4. 创新不只是调参曲线</h2>
+<p>匹配模型下，创新应近似零均值，并在时间上不相关。持续同号的残差可能指向偏置、时延或模型遗漏，而不只是 R 不够大。</p>
+<p>$$
+\operatorname{NIS}_k=\nu_k^{\mathsf T}S_k^{-1}\nu_k.
+$$</p>
+<p>在线性高斯且统计匹配时，NIS 服从自由度为当前测量维数的卡方分布。标量时均值为 1。一次 NIS 很大不等于滤波器一定坏了；应综合多次统计、异常值和测量质量判断。状态 NEES 还需要已知真值，实车上通常无法直接计算。</p>
+<h2 id="section-5">5. 丢帧与异常值怎样处理？</h2>
+<p>测量丢失时只做预测，让不确定性继续增长。异常值处理可采用测量质量判断与创新门限；拒绝测量后应保留预测协方差。持续拒绝所有新数据，可能是模型已经漂移，不能盲目把它当作“鲁棒”。</p>
+<div class="demo" data-demo="stage4-lab" data-mode="kf"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>
+<h2 id="section-6">6. 自测与记录表</h2>
+<p>固定同一段测量，分别放大 Q 和 R，记录误差、创新和估计协方差。滤波曲线更平滑并不一定更准确；应检查动态滞后。先确定噪声模型和单位，再调整数值。</p>
+<h2 id="section-7">图示核对</h2>
+<p><img alt="固定真实过程方差0.01和测量方差0.09，只改变滤波器假设的R，比较平滑程度与动态误差。" src="../courses/40-Kalman滤波调参与一致性检查/media/example.svg"/></p>
+<p>固定真实过程方差0.01和测量方差0.09，只改变滤波器假设的R，比较平滑程度与动态误差。</p>
+</article><div class="page-footer"><a href="39-Kalman滤波的预测与校正.html">← 上一课</a><a href="41-EKF与非线性状态估计.html">下一课 →</a></div></main>
+<nav class="sidebar" aria-label="课程总目录"><div class="sidebar-title">课程总目录</div><a class="nav-home" href="../index.html">首页 · 课程目录</a><div class="group-label">按学习阶段浏览</div><details class="nav-phase"><summary><span class="phase-title">阶段 0｜经典控制基础与补桥</span><small>第 1–16 课：反馈、PID、稳定性与频域设计</small></summary><details class="nav-course"><summary><span class="course-number">第 1 课</span><span class="course-title">反馈控制与第一个 PD 控制器</span></summary><div class="nav-course-links"><a class="" href="01-反馈控制.html">讲解</a><a class="" href="../reviews/01-反馈控制.html">复习</a><a class="" href="../formulas/01-反馈控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 2 课</span><span class="course-title">二阶系统、阻尼比与超调量</span></summary><div class="nav-course-links"><a class="" href="02-二阶系统.html">讲解</a><a class="" href="../reviews/02-二阶系统.html">复习</a><a class="" href="../formulas/02-二阶系统.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 3 课</span><span class="course-title">拉普拉斯变换与传递函数</span></summary><div class="nav-course-links"><a class="" href="03-传递函数.html">讲解</a><a class="" href="../reviews/03-传递函数.html">复习</a><a class="" href="../formulas/03-传递函数.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 4 课</span><span class="course-title">极点、零点与系统稳定性</span></summary><div class="nav-course-links"><a class="" href="04-极点与零点.html">讲解</a><a class="" href="../reviews/04-极点与零点.html">复习</a><a class="" href="../formulas/04-极点与零点.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 5 课</span><span class="course-title">时间响应指标与 PD 控制器参数设计</span></summary><div class="nav-course-links"><a class="" href="05-PD参数设计.html">讲解</a><a class="" href="../reviews/05-PD参数设计.html">复习</a><a class="" href="../formulas/05-PD参数设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 6 课</span><span class="course-title">积分控制、稳态误差与积分饱和</span></summary><div class="nav-course-links"><a class="" href="06-积分控制.html">讲解</a><a class="" href="../reviews/06-积分控制.html">复习</a><a class="" href="../formulas/06-积分控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 7 课</span><span class="course-title">稳态误差与终值定理</span></summary><div class="nav-course-links"><a class="" href="07-稳态误差与终值定理.html">讲解</a><a class="" href="../reviews/07-稳态误差与终值定理.html">复习</a><a class="" href="../formulas/07-稳态误差与终值定理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 8 课</span><span class="course-title">PID 参数整定与积分抗饱和</span></summary><div class="nav-course-links"><a class="" href="08-PID整定与抗饱和.html">讲解</a><a class="" href="../reviews/08-PID整定与抗饱和.html">复习</a><a class="" href="../formulas/08-PID整定与抗饱和.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 9 课</span><span class="course-title">数字 PID 实现</span></summary><div class="nav-course-links"><a class="" href="09-数字PID实现.html">讲解</a><a class="" href="../reviews/09-数字PID实现.html">复习</a><a class="" href="../formulas/09-数字PID实现.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 10 课</span><span class="course-title">Routh稳定判据</span></summary><div class="nav-course-links"><a class="" href="10-Routh稳定判据.html">讲解</a><a class="" href="../reviews/10-Routh稳定判据.html">复习</a><a class="" href="../formulas/10-Routh稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 11 课</span><span class="course-title">根轨迹与增益设计</span></summary><div class="nav-course-links"><a class="" href="11-根轨迹与增益设计.html">讲解</a><a class="" href="../reviews/11-根轨迹与增益设计.html">复习</a><a class="" href="../formulas/11-根轨迹与增益设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 12 课</span><span class="course-title">频率响应与 Bode 图</span></summary><div class="nav-course-links"><a class="" href="12-频率响应与Bode图.html">讲解</a><a class="" href="../reviews/12-频率响应与Bode图.html">复习</a><a class="" href="../formulas/12-频率响应与Bode图.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 13 课</span><span class="course-title">Nyquist 稳定判据——沿着曲线判断闭环稳定性</span></summary><div class="nav-course-links"><a class="" href="13-Nyquist稳定判据.html">讲解</a><a class="" href="../reviews/13-Nyquist稳定判据.html">复习</a><a class="" href="../formulas/13-Nyquist稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 14 课</span><span class="course-title">增益裕度与相位裕度</span></summary><div class="nav-course-links"><a class="" href="14-增益裕度与相位裕度.html">讲解</a><a class="" href="../reviews/14-增益裕度与相位裕度.html">复习</a><a class="" href="../formulas/14-增益裕度与相位裕度.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 15 课</span><span class="course-title">超前与滞后校正</span></summary><div class="nav-course-links"><a class="" href="15-超前与滞后校正.html">讲解</a><a class="" href="../reviews/15-超前与滞后校正.html">复习</a><a class="" href="../formulas/15-超前与滞后校正.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 16 课</span><span class="course-title">闭环带宽、延迟与鲁棒性</span></summary><div class="nav-course-links"><a class="" href="16-闭环带宽与延迟鲁棒性.html">讲解</a><a class="" href="../reviews/16-闭环带宽与延迟鲁棒性.html">复习</a><a class="" href="../formulas/16-闭环带宽与延迟鲁棒性.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 1｜数学与模型衔接</span><small>第 17–19 课：矩阵、特征值、传递函数与状态空间</small></summary><details class="nav-course"><summary><span class="course-number">第 17 课</span><span class="course-title">矩阵与状态向量——现代控制的数学语言</span></summary><div class="nav-course-links"><a class="" href="17-矩阵与状态向量.html">讲解</a><a class="" href="../reviews/17-矩阵与状态向量.html">复习</a><a class="" href="../formulas/17-矩阵与状态向量.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 18 课</span><span class="course-title">特征值与系统动态</span></summary><div class="nav-course-links"><a class="" href="18-特征值与系统动态.html">讲解</a><a class="" href="../reviews/18-特征值与系统动态.html">复习</a><a class="" href="../formulas/18-特征值与系统动态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 19 课</span><span class="course-title">传递函数到状态空间</span></summary><div class="nav-course-links"><a class="" href="19-传递函数到状态空间.html">讲解</a><a class="" href="../reviews/19-传递函数到状态空间.html">复习</a><a class="" href="../formulas/19-传递函数到状态空间.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 2｜现代线性控制核心</span><small>第 20–31 课：状态响应、反馈、LQR、估计与离散综合</small></summary><details class="nav-course"><summary><span class="course-number">第 20 课</span><span class="course-title">状态空间基础</span></summary><div class="nav-course-links"><a class="" href="20-状态空间基础.html">讲解</a><a class="" href="../reviews/20-状态空间基础.html">复习</a><a class="" href="../formulas/20-状态空间基础.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 21 课</span><span class="course-title">相平面与状态轨迹</span></summary><div class="nav-course-links"><a class="" href="21-相平面与状态轨迹.html">讲解</a><a class="" href="../reviews/21-相平面与状态轨迹.html">复习</a><a class="" href="../formulas/21-相平面与状态轨迹.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 22 课</span><span class="course-title">连续系统离散化</span></summary><div class="nav-course-links"><a class="" href="22-连续系统离散化.html">讲解</a><a class="" href="../reviews/22-连续系统离散化.html">复习</a><a class="" href="../formulas/22-连续系统离散化.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 23 课</span><span class="course-title">可控性与可达状态</span></summary><div class="nav-course-links"><a class="" href="23-可控性与可达状态.html">讲解</a><a class="" href="../reviews/23-可控性与可达状态.html">复习</a><a class="" href="../formulas/23-可控性与可达状态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 24 课</span><span class="course-title">线性系统的Lyapunov稳定性</span></summary><div class="nav-course-links"><a class="" href="24-线性系统的Lyapunov稳定性.html">讲解</a><a class="" href="../reviews/24-线性系统的Lyapunov稳定性.html">复习</a><a class="" href="../formulas/24-线性系统的Lyapunov稳定性.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 25 课</span><span class="course-title">状态反馈与极点配置</span></summary><div class="nav-course-links"><a class="" href="25-状态反馈与极点配置.html">讲解</a><a class="" href="../reviews/25-状态反馈与极点配置.html">复习</a><a class="" href="../formulas/25-状态反馈与极点配置.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 26 课</span><span class="course-title">LQR最优状态反馈</span></summary><div class="nav-course-links"><a class="" href="26-LQR最优状态反馈.html">讲解</a><a class="" href="../reviews/26-LQR最优状态反馈.html">复习</a><a class="" href="../formulas/26-LQR最优状态反馈.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 27 课</span><span class="course-title">状态反馈的参考跟踪</span></summary><div class="nav-course-links"><a class="" href="27-状态反馈的参考跟踪.html">讲解</a><a class="" href="../reviews/27-状态反馈的参考跟踪.html">复习</a><a class="" href="../formulas/27-状态反馈的参考跟踪.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 28 课</span><span class="course-title">可观测性与输出信息</span></summary><div class="nav-course-links"><a class="" href="28-可观测性与输出信息.html">讲解</a><a class="" href="../reviews/28-可观测性与输出信息.html">复习</a><a class="" href="../formulas/28-可观测性与输出信息.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 29 课</span><span class="course-title">Luenberger状态观测器</span></summary><div class="nav-course-links"><a class="" href="29-Luenberger状态观测器.html">讲解</a><a class="" href="../reviews/29-Luenberger状态观测器.html">复习</a><a class="" href="../formulas/29-Luenberger状态观测器.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 30 课</span><span class="course-title">观测器反馈与分离原理</span></summary><div class="nav-course-links"><a class="" href="30-观测器反馈与分离原理.html">讲解</a><a class="" href="../reviews/30-观测器反馈与分离原理.html">复习</a><a class="" href="../formulas/30-观测器反馈与分离原理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 31 课</span><span class="course-title">离散状态反馈与综合设计</span></summary><div class="nav-course-links"><a class="" href="31-离散状态反馈与综合设计.html">讲解</a><a class="" href="../reviews/31-离散状态反馈与综合设计.html">复习</a><a class="" href="../formulas/31-离散状态反馈与综合设计.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 3｜非线性控制进阶</span><small>第 32–37 课：局部分析、稳定性证明与非线性控制设计</small></summary><details class="nav-course"><summary><span class="course-number">第 32 课</span><span class="course-title">非线性模型与局部线性化</span></summary><div class="nav-course-links"><a class="" href="32-非线性模型与局部线性化.html">讲解</a><a class="" href="../reviews/32-非线性模型与局部线性化.html">复习</a><a class="" href="../formulas/32-非线性模型与局部线性化.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 33 课</span><span class="course-title">非线性Lyapunov与吸引域</span></summary><div class="nav-course-links"><a class="" href="33-非线性Lyapunov与吸引域.html">讲解</a><a class="" href="../reviews/33-非线性Lyapunov与吸引域.html">复习</a><a class="" href="../formulas/33-非线性Lyapunov与吸引域.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 34 课</span><span class="course-title">LaSalle不变集原理</span></summary><div class="nav-course-links"><a class="" href="34-LaSalle不变集原理.html">讲解</a><a class="" href="../reviews/34-LaSalle不变集原理.html">复习</a><a class="" href="../formulas/34-LaSalle不变集原理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 35 课</span><span class="course-title">反馈线性化与模型误差</span></summary><div class="nav-course-links"><a class="" href="35-反馈线性化与模型误差.html">讲解</a><a class="" href="../reviews/35-反馈线性化与模型误差.html">复习</a><a class="" href="../formulas/35-反馈线性化与模型误差.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 36 课</span><span class="course-title">滑模控制与抖振</span></summary><div class="nav-course-links"><a class="" href="36-滑模控制与抖振.html">讲解</a><a class="" href="../reviews/36-滑模控制与抖振.html">复习</a><a class="" href="../formulas/36-滑模控制与抖振.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 37 课</span><span class="course-title">非线性摆系统综合设计</span></summary><div class="nav-course-links"><a class="" href="37-非线性摆系统综合设计.html">讲解</a><a class="" href="../reviews/37-非线性摆系统综合设计.html">复习</a><a class="" href="../formulas/37-非线性摆系统综合设计.html">公式</a></div></details></details><details class="nav-phase" open><summary><span class="phase-title">阶段 4：状态估计与约束控制</span><small>第 38–46 课：Kalman、EKF、滚动优化、MPC 与车辆跟踪</small></summary><details class="nav-course"><summary><span class="course-number">第 38 课</span><span class="course-title">噪声协方差与状态估计</span></summary><div class="nav-course-links"><a class="" href="38-噪声协方差与状态估计.html">讲解</a><a class="" href="../reviews/38-噪声协方差与状态估计.html">复习</a><a class="" href="../formulas/38-噪声协方差与状态估计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 39 课</span><span class="course-title">Kalman滤波的预测与校正</span></summary><div class="nav-course-links"><a class="" href="39-Kalman滤波的预测与校正.html">讲解</a><a class="" href="../reviews/39-Kalman滤波的预测与校正.html">复习</a><a class="" href="../formulas/39-Kalman滤波的预测与校正.html">公式</a></div></details><details class="nav-course" open><summary><span class="course-number">第 40 课</span><span class="course-title">Kalman滤波调参与一致性检查</span></summary><div class="nav-course-links"><a class="active" href="40-Kalman滤波调参与一致性检查.html">讲解</a><a class="" href="../reviews/40-Kalman滤波调参与一致性检查.html">复习</a><a class="" href="../formulas/40-Kalman滤波调参与一致性检查.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 41 课</span><span class="course-title">EKF与非线性状态估计</span></summary><div class="nav-course-links"><a class="" href="41-EKF与非线性状态估计.html">讲解</a><a class="" href="../reviews/41-EKF与非线性状态估计.html">复习</a><a class="" href="../formulas/41-EKF与非线性状态估计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 42 课</span><span class="course-title">优化控制与滚动时域</span></summary><div class="nav-course-links"><a class="" href="42-优化控制与滚动时域.html">讲解</a><a class="" href="../reviews/42-优化控制与滚动时域.html">复习</a><a class="" href="../formulas/42-优化控制与滚动时域.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 43 课</span><span class="course-title">线性MPC预测模型与代价</span></summary><div class="nav-course-links"><a class="" href="43-线性MPC预测模型与代价.html">讲解</a><a class="" href="../reviews/43-线性MPC预测模型与代价.html">复习</a><a class="" href="../formulas/43-线性MPC预测模型与代价.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 44 课</span><span class="course-title">MPC约束软化与求解检查</span></summary><div class="nav-course-links"><a class="" href="44-MPC约束软化与求解检查.html">讲解</a><a class="" href="../reviews/44-MPC约束软化与求解检查.html">复习</a><a class="" href="../formulas/44-MPC约束软化与求解检查.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 45 课</span><span class="course-title">车辆横向模型与MPC轨迹跟踪</span></summary><div class="nav-course-links"><a class="" href="45-车辆横向模型与MPC轨迹跟踪.html">讲解</a><a class="" href="../reviews/45-车辆横向模型与MPC轨迹跟踪.html">复习</a><a class="" href="../formulas/45-车辆横向模型与MPC轨迹跟踪.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 46 课</span><span class="course-title">EKF与MPC车辆跟踪综合实验</span></summary><div class="nav-course-links"><a class="" href="46-EKF与MPC车辆跟踪综合实验.html">讲解</a><a class="" href="../reviews/46-EKF与MPC车辆跟踪综合实验.html">复习</a><a class="" href="../formulas/46-EKF与MPC车辆跟踪综合实验.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 5：工程实现与综合实验</span><small>暂留空，后续补充</small></summary><div class="phase-coming">该阶段课程将在学习进度推进后加入。</div></details></nav>
+</div><script data-demo-module="demo-core">
+/* 共享交互基础设施：课程页面按需加载各 demo 的普通脚本，兼容 file:// 离线打开。 */
+(function(){
+  'use strict';
+  const registry = new Map();
+  const DEG = 180/Math.PI;
+  function color(light,dark){return document.documentElement.dataset.theme==='dark'?dark:light;}
+  function poleRoots(J,Kp,Kd){
+    const d=Kd*Kd-4*J*Kp;
+    return d>=0 ? [{re:(-Kd+Math.sqrt(d))/(2*J),im:0},{re:(-Kd-Math.sqrt(d))/(2*J),im:0}]
+      : [{re:-Kd/(2*J),im:Math.sqrt(-d)/(2*J)},{re:-Kd/(2*J),im:-Math.sqrt(-d)/(2*J)}];
+  }
+  function solve(J,Kp,Kd){
+    let q=0,v=0,t=0;const dt=.008,out=[],qr=Math.PI/2;
+    const rhs=(a,b)=>[b,(Kp*(qr-a)-Kd*b)/J];
+    for(let i=0;i<=750;i++){
+      out.push([t,q*DEG]);
+      const a=rhs(q,v),b=rhs(q+dt*a[0]/2,v+dt*a[1]/2),c=rhs(q+dt*b[0]/2,v+dt*b[1]/2),d=rhs(q+dt*c[0],v+dt*c[1]);
+      q+=dt*(a[0]+2*b[0]+2*c[0]+d[0])/6;
+      v+=dt*(a[1]+2*b[1]+2*c[1]+d[1])/6;t+=dt;
+    }
+    return out;
+  }
+  function canvasReady(canvas){
+    const w=Math.max(canvas.clientWidth,260),h=canvas.clientHeight||245,dpr=window.devicePixelRatio||1;
+    canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+    const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);return {ctx,w,h};
+  }
+  function mountPD(node, options){
+    const J0=Number(node.dataset.j||1),Kp0=Number(node.dataset.kp||16),Kd0=Number(node.dataset.kd??8);
+    node.innerHTML=`<p class="demo-title">${options.title}</p><p class="demo-note">理想单关节模型，目标 90°、初始角度及速度为零；本地浏览器计算。</p>
+      <div class="demo-controls">
+      <div class="control"><label>J（kg·m²）<output data-out="j"></output></label><input data-param="j" type="range" min="0.5" max="5" step="0.5"></div>
+      <div class="control"><label>Kp（N·m/rad）<output data-out="kp"></output></label><input data-param="kp" type="range" min="2" max="36" step="2"></div>
+      <div class="control"><label>Kd（N·m·s/rad）<output data-out="kd"></output></label><input data-param="kd" type="range" min="0" max="24" step="1"></div>
+      </div><canvas class="demo-canvas" role="img" aria-label="互动数学模型的曲线"></canvas>
+      <div class="demo-meta" aria-live="polite"></div><div class="demo-caption">${options.caption}</div>`;
+    const inputs={};node.querySelectorAll('input').forEach(el=>inputs[el.dataset.param]=el);
+    inputs.j.value=String(J0);inputs.kp.value=String(Kp0);inputs.kd.value=String(Kd0);
+    const canvas=node.querySelector('canvas'),meta=node.querySelector('.demo-meta');
+    function draw(){
+      const J=+inputs.j.value,Kp=+inputs.kp.value,Kd=+inputs.kd.value;
+      for(const name of ['j','kp','kd'])node.querySelector('[data-out="'+name+'"]').textContent=inputs[name].value;
+      const z=Kd/(2*Math.sqrt(J*Kp)),wn=Math.sqrt(Kp/J);
+      const details=options.render(canvas,J,Kp,Kd);
+      meta.replaceChildren();
+      for(const str of [`阻尼比 ζ = ${z.toFixed(3)}`,`ωn = ${wn.toFixed(3)} rad/s`,...details]){
+        const s=document.createElement('span');s.textContent=str;meta.appendChild(s);
+      }
+    }
+    Object.values(inputs).forEach(el=>el.addEventListener('input',draw));
+    window.addEventListener('robot-theme-changed',draw);
+    if(typeof ResizeObserver!=='undefined')new ResizeObserver(draw).observe(canvas);
+    else window.addEventListener('resize',draw);
+    draw();
+  }
+  window.NoteDemos={register(name,mount){
+    if(registry.has(name))throw new Error('重复的演示名称：'+name);
+    registry.set(name,mount);
+  }, utils:{color,poleRoots,solve,canvasReady,mountPD}};
+  function boot(){
+    document.querySelectorAll('.demo[data-demo]').forEach(node=>{
+      const name=node.dataset.demo;
+      try{
+        if(!registry.has(name))throw new Error(`模块「${name}」没有注册`);
+        registry.get(name)(node,window.NoteDemos.utils);
+      }catch(err){
+        node.textContent=`演示加载失败（${name}）：${err.message}。正文和公式仍可阅读。`;
+        node.classList.add('demo-error');console.error(err);
+      }
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+
+</script>
+<script data-demo-module="stage4-lab">
+(function(){
+'use strict';
+window.NoteDemos.register('stage4-lab',function(node,utils){
+ const isKF=node.dataset.mode==='kf';
+ const controls=isKF?[['q','模型 Q',.001,.1,.001,.01],['r','测量 R',.005,1,.005,.09]]:[['n','预测步数 N',3,25,1,10],['r','输入权重 R',.1,3,.1,.5],['bound','输入幅值上限',.1,1,.05,.4]];
+ node.innerHTML='<p class="demo-title">'+(isKF?'随机游走 Kalman 滤波':'标量积分器的箱约束 MPC')+'</p><p class="demo-note">'+(isKF?'固定同一份随机数据：真实过程方差 0.01、真实测量方差 0.09；滑块改变滤波器假设。':'x[k+1]=x[k]+u[k]，目标为零，第10拍额外加入 +0.3 状态扰动；投影梯度近似求解，无终端稳定性设计。')+'</p><div class="demo-controls"></div><canvas class="demo-canvas" role="img" aria-label="估计与控制数值实验曲线"></canvas><div class="demo-meta" aria-live="polite"></div><p class="demo-caption">'+(isKF?'蓝线是真值，灰线是测量，橙线是估计；数据保持不变，便于比较参数。':'蓝线为实际状态，橙线为逐拍执行输入。放宽约束、增大时域与改变输入惩罚会共同改变策略。')+'</p>';
+ const inputs={};
+ controls.forEach(([key,label,min,max,step,value])=>{
+  const box=document.createElement('div');box.className='control';
+  box.innerHTML='<label>'+label+'<output></output></label><input type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+value+'">';
+  node.querySelector('.demo-controls').appendChild(box);inputs[key]=box.querySelector('input');inputs[key].addEventListener('input',draw);
+ });
+ function noise(){let state=7;return ()=>{state=(1664525*state+1013904223)>>>0;const a=(state+1)/4294967297;state=(1664525*state+1013904223)>>>0;const b=(state+1)/4294967297;return Math.sqrt(-2*Math.log(a))*Math.cos(2*Math.PI*b);};}
+ const normal=noise(),truth=[],measure=[];let tx=0;
+ for(let k=0;k<100;k++){tx+=.1*normal();truth.push(tx);measure.push(tx+.3*normal());}
+ function draw(){
+  const p={};Object.entries(inputs).forEach(([key,input])=>{p[key]=+input.value;input.parentElement.querySelector('output').textContent=input.value;});
+  let series=[],meta=[];
+  if(isKF){let x=0,P=1,lastK=0;const est=[];
+   for(let k=0;k<truth.length;k++){P+=p.q;lastK=P/(P+p.r);x+=lastK*(measure[k]-x);P=(1-lastK)*P;est.push(x);}
+   const rmse=Math.sqrt(est.reduce((sum,x,k)=>sum+(x-truth[k])**2,0)/est.length);
+   series=[{values:measure,color:'#8a939f'},{values:truth,color:utils.color('#2878b5','#8fc7f1')},{values:est,color:'#e07a35'}];meta=['估计 RMSE '+rmse.toFixed(3),'末次增益 '+lastK.toFixed(3),'后验方差 '+P.toFixed(4)];
+  }else{
+   const N=p.n,alpha=1/(2*(N*(N+1)/2+p.r)),clip=x=>Math.max(-p.bound,Math.min(p.bound,x));let state=1,U=Array(N).fill(0),maxResidual=0;const xs=[],us=[];
+   for(let k=0;k<35;k++){
+    if(k===10)state+=.3;xs.push(state);
+    let residual=0;
+    for(let it=0;it<900;it++){
+     let acc=state;const predicted=U.map(u=>(acc+=u));let suffix=0;const grad=Array(N);
+     for(let j=N-1;j>=0;j--){suffix+=predicted[j];grad[j]=2*(suffix+p.r*U[j]);}
+     const next=U.map((u,j)=>clip(u-alpha*grad[j]));residual=Math.max(...next.map((u,j)=>Math.abs(u-U[j])))/alpha;U=next;if(residual<1e-5)break;
+    }
+    maxResidual=Math.max(maxResidual,residual);us.push(U[0]);state+=U[0];U=U.slice(1).concat(U[N-1]);
+   }
+   series=[{values:xs,color:utils.color('#2878b5','#8fc7f1')},{values:us,color:'#e07a35'}];meta=['最大执行输入 '+Math.max(...us.map(Math.abs)).toFixed(3),'末拍状态 '+xs[xs.length-1].toFixed(4),'最大投影残差 '+maxResidual.toExponential(1)];
+  }
+  const {ctx,w,h}=utils.canvasReady(node.querySelector('canvas'));ctx.clearRect(0,0,w,h);
+  const all=series.flatMap(s=>s.values),min=Math.min(0,...all)-.1,max=Math.max(.1,...all)+.1,pad={l:45,r:14,t:16,b:28};
+  const X=k=>pad.l+k/(series[0].values.length-1)*(w-pad.l-pad.r),Y=v=>pad.t+(max-v)/(max-min)*(h-pad.t-pad.b);
+  ctx.font='11px system-ui';ctx.textAlign='right';
+  for(let i=0;i<=4;i++){let value=min+(max-min)*i/4;ctx.strokeStyle=utils.color('#e1e6ec','#3d4856');ctx.beginPath();ctx.moveTo(pad.l,Y(value));ctx.lineTo(w-pad.r,Y(value));ctx.stroke();ctx.fillStyle=utils.color('#687786','#b2becb');ctx.fillText(value.toFixed(2),pad.l-5,Y(value)+3);}
+  series.forEach(s=>{ctx.strokeStyle=s.color;ctx.lineWidth=s===series[0]&&isKF?1:2;ctx.beginPath();s.values.forEach((v,k)=>k?ctx.lineTo(X(k),Y(v)):ctx.moveTo(X(k),Y(v)));ctx.stroke();});
+  ctx.textAlign='center';ctx.fillText('采样序号 k',w/2,h-6);node.querySelector('.demo-meta').replaceChildren(...meta.map(t=>{const s=document.createElement('span');s.textContent=t;return s;}));
+ }
+ window.addEventListener('robot-theme-changed',draw);if(typeof ResizeObserver!=='undefined')new ResizeObserver(draw).observe(node.querySelector('canvas'));else window.addEventListener('resize',draw);draw();
+});
+})();
+
+</script></body></html>

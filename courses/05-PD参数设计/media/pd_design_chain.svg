@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="854.64pt" height="242.64pt" viewBox="0 0 854.64 242.64" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-10-26T16:56:37.814448</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.0, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 242.64 
+L 854.64 242.64 
+L 854.64 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 39.12912 183.40128 
+L 185.33088 183.40128 
+Q 206.33688 183.40128 206.33688 177.69528 
+L 206.33688 53.53272 
+Q 206.33688 47.82672 185.33088 47.82672 
+L 39.12912 47.82672 
+Q 18.12312 47.82672 18.12312 53.53272 
+L 18.12312 177.69528 
+Q 18.12312 183.40128 39.12912 183.40128 
+z
+" clip-path="url(#pa5973e0d8a)" style="fill: #eaf2f8; stroke: #2878b5; stroke-width: 1.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 249.18912 183.40128 
+L 395.39088 183.40128 
+Q 416.39688 183.40128 416.39688 177.69528 
+L 416.39688 53.53272 
+Q 416.39688 47.82672 395.39088 47.82672 
+L 249.18912 47.82672 
+Q 228.18312 47.82672 228.18312 53.53272 
+L 228.18312 177.69528 
+Q 228.18312 183.40128 249.18912 183.40128 
+z
+" clip-path="url(#pa5973e0d8a)" style="fill: #e8f5f2; stroke: #1b9e8a; stroke-width: 1.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 459.24912 183.40128 
+L 605.45088 183.40128 
+Q 626.45688 183.40128 626.45688 177.69528 
+L 626.45688 53.53272 
+Q 626.45688 47.82672 605.45088 47.82672 
+L 459.24912 47.82672 
+Q 438.24312 47.82672 438.24312 53.53272 
+L 438.24312 177.69528 
+Q 438.24312 183.40128 459.24912 183.40128 
+z
+" clip-path="url(#pa5973e0d8a)" style="fill: #fff3e8; stroke: #e07a35; stroke-width: 1.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 669.30912 183.40128 
+L 815.51088 183.40128 
+Q 836.51688 183.40128 836.51688 177.69528 
+L 836.51688 53.53272 
+Q 836.51688 47.82672 815.51088 47.82672 
+L 669.30912 47.82672 
+Q 648.30312 47.82672 648.30312 53.53272 
+L 648.30312 177.69528 
+Q 648.30312 183.40128 669.30912 183.40128 
+z
+" clip-path="url(#pa5973e0d8a)" style="fill: #f2eef9; stroke: #7763a6; stroke-width: 1.8; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 12px; font-family: 'Microsoft YaHei'; text-anchor: middle; fill: #17324d" x="112.23" y="94.200296" transform="rotate(-0 112.23 94.200296)">性能指标</text>
+   </g>
+   <g id="text_2">
+    <!-- 超调上限 $M_p$ -->
+    <g style="fill: #17324d" transform="translate(84.03 132.990269)">
+     <text>
+      <tspan x="0" y="-0.703125" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d">超</tspan>
+      <tspan x="10" y="-0.703125" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d">调</tspan>
+      <tspan x="20" y="-0.703125" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d">上</tspan>
+      <tspan x="30" y="-0.703125" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d">限</tspan>
+      <tspan x="40" y="-0.703125" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d"> </tspan>
+      <tspan x="42.958984" y="-0.703125" style="font-style: oblique; font-size: 10px; font-family: 'DejaVu Sans'; fill: #17324d">M</tspan>
+      <tspan x="51.586914" y="0.9375" style="font-style: oblique; font-size: 7px; font-family: 'DejaVu Sans'; fill: #17324d">p</tspan>
+     </text>
+    </g>
+    <!-- 调节时间 $T_s$ -->
+    <g style="fill: #17324d" transform="translate(85.73 145.682769)">
+     <text>
+      <tspan x="0" y="-0.6875" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d">调</tspan>
+      <tspan x="10" y="-0.6875" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d">节</tspan>
+      <tspan x="20" y="-0.6875" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d">时</tspan>
+      <tspan x="30" y="-0.6875" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d">间</tspan>
+      <tspan x="40" y="-0.6875" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d"> </tspan>
+      <tspan x="42.958984" y="-0.6875" style="font-style: oblique; font-size: 10px; font-family: 'DejaVu Sans'; fill: #17324d">T</tspan>
+      <tspan x="49.067383" y="0.953125" style="font-style: oblique; font-size: 7px; font-family: 'DejaVu Sans'; fill: #17324d">s</tspan>
+     </text>
+    </g>
+   </g>
+   <g id="patch_6">
+    <path d="M 208.334296 115.614 
+Q 217.258029 115.614 224.1693 115.614 
+" style="fill: none; stroke: #687786; stroke-width: 1.8; stroke-linecap: round"/>
+    <path d="M 219.7693 113.414 
+L 224.1693 115.614 
+L 219.7693 117.814 
+z
+" style="fill: #687786; stroke: #687786; stroke-width: 1.8; stroke-linecap: round"/>
+   </g>
+   <g id="text_3">
+    <text style="font-weight: 700; font-size: 12px; font-family: 'Microsoft YaHei'; text-anchor: middle; fill: #17324d" x="322.29" y="94.200296" transform="rotate(-0 322.29 94.200296)">确定二阶参数</text>
+   </g>
+   <g id="text_4">
+    <!-- $M_p$ 反推 $\zeta$ -->
+    <g style="fill: #17324d" transform="translate(299.89 133.040269)">
+     <text>
+      <tspan x="0" y="-0.671875" style="font-style: oblique; font-size: 10px; font-family: 'DejaVu Sans'; fill: #17324d">M</tspan>
+      <tspan x="39.262695" y="-0.671875" style="font-style: oblique; font-size: 10px; font-family: 'DejaVu Sans'; fill: #17324d">ζ</tspan>
+      <tspan x="8.62793" y="0.96875" style="font-style: oblique; font-size: 7px; font-family: 'DejaVu Sans'; fill: #17324d">p</tspan>
+      <tspan x="13.344727" y="-0.671875" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d"> </tspan>
+      <tspan x="16.303711" y="-0.671875" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d">反</tspan>
+      <tspan x="26.303711" y="-0.671875" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d">推</tspan>
+      <tspan x="36.303711" y="-0.671875" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d"> </tspan>
+     </text>
+    </g>
+    <!-- $T_s$ 估算 $\omega_n$ -->
+    <g style="fill: #17324d" transform="translate(297.74 145.732769)">
+     <text>
+      <tspan x="0" y="-0.640625" style="font-style: oblique; font-size: 10px; font-family: 'DejaVu Sans'; fill: #17324d">T</tspan>
+      <tspan x="35.946777" y="-0.640625" style="font-style: oblique; font-size: 10px; font-family: 'DejaVu Sans'; fill: #17324d">ω</tspan>
+      <tspan x="6.108398" y="1" style="font-style: oblique; font-size: 7px; font-family: 'DejaVu Sans'; fill: #17324d">s</tspan>
+      <tspan x="44.320801" y="1" style="font-style: oblique; font-size: 7px; font-family: 'DejaVu Sans'; fill: #17324d">n</tspan>
+      <tspan x="10.028809" y="-0.640625" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d"> </tspan>
+      <tspan x="12.987793" y="-0.640625" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d">估</tspan>
+      <tspan x="22.987793" y="-0.640625" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d">算</tspan>
+      <tspan x="32.987793" y="-0.640625" style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d"> </tspan>
+     </text>
+    </g>
+   </g>
+   <g id="patch_7">
+    <path d="M 418.394296 115.614 
+Q 427.318029 115.614 434.2293 115.614 
+" style="fill: none; stroke: #687786; stroke-width: 1.8; stroke-linecap: round"/>
+    <path d="M 429.8293 113.414 
+L 434.2293 115.614 
+L 429.8293 117.814 
+z
+" style="fill: #687786; stroke: #687786; stroke-width: 1.8; stroke-linecap: round"/>
+   </g>
+   <g id="text_5">
+    <text style="font-weight: 700; font-size: 12px; font-family: 'Microsoft YaHei'; text-anchor: middle; fill: #17324d" x="532.35" y="94.200296" transform="rotate(-0 532.35 94.200296)">计算 PD 增益</text>
+   </g>
+   <g id="text_6">
+    <!-- $K_p=J\omega_n^2$ -->
+    <g style="fill: #17324d" transform="translate(512.3 133.390269)">
+     <text>
+      <tspan x="0" y="-0.976562" style="font-style: oblique; font-size: 10px; font-family: 'DejaVu Sans'; fill: #17324d">K</tspan>
+      <tspan x="23.549805" y="-0.976562" style="font-style: oblique; font-size: 10px; font-family: 'DejaVu Sans'; fill: #17324d">J</tspan>
+      <tspan x="26.499023" y="-0.976562" style="font-style: oblique; font-size: 10px; font-family: 'DejaVu Sans'; fill: #17324d">ω</tspan>
+      <tspan x="6.557617" y="0.664062" style="font-style: oblique; font-size: 7px; font-family: 'DejaVu Sans'; fill: #17324d">p</tspan>
+      <tspan x="34.873047" y="1.757812" style="font-style: oblique; font-size: 7px; font-family: 'DejaVu Sans'; fill: #17324d">n</tspan>
+      <tspan x="13.222656" y="-0.976562" style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #17324d">=</tspan>
+      <tspan x="35.319661" y="-4.804688" style="font-size: 7px; font-family: 'DejaVu Sans'; fill: #17324d">2</tspan>
+     </text>
+    </g>
+    <!-- $K_d=2\zeta J\omega_n$ -->
+    <g style="fill: #17324d" transform="translate(506.65 146.082769)">
+     <text>
+      <tspan x="0" y="-0.40625" style="font-style: oblique; font-size: 10px; font-family: 'DejaVu Sans'; fill: #17324d">K</tspan>
+      <tspan x="29.912109" y="-0.40625" style="font-style: oblique; font-size: 10px; font-family: 'DejaVu Sans'; fill: #17324d">ζ</tspan>
+      <tspan x="35.351562" y="-0.40625" style="font-style: oblique; font-size: 10px; font-family: 'DejaVu Sans'; fill: #17324d">J</tspan>
+      <tspan x="38.300781" y="-0.40625" style="font-style: oblique; font-size: 10px; font-family: 'DejaVu Sans'; fill: #17324d">ω</tspan>
+      <tspan x="6.557617" y="1.234375" style="font-style: oblique; font-size: 7px; font-family: 'DejaVu Sans'; fill: #17324d">d</tspan>
+      <tspan x="46.674805" y="1.234375" style="font-style: oblique; font-size: 7px; font-family: 'DejaVu Sans'; fill: #17324d">n</tspan>
+      <tspan x="13.222656" y="-0.40625" style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #17324d">=</tspan>
+      <tspan x="23.549805" y="-0.40625" style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #17324d">2</tspan>
+     </text>
+    </g>
+   </g>
+   <g id="patch_8">
+    <path d="M 628.454296 115.614 
+Q 637.378029 115.614 644.2893 115.614 
+" style="fill: none; stroke: #687786; stroke-width: 1.8; stroke-linecap: round"/>
+    <path d="M 639.8893 113.414 
+L 644.2893 115.614 
+L 639.8893 117.814 
+z
+" style="fill: #687786; stroke: #687786; stroke-width: 1.8; stroke-linecap: round"/>
+   </g>
+   <g id="text_7">
+    <text style="font-weight: 700; font-size: 12px; font-family: 'Microsoft YaHei'; text-anchor: middle; fill: #17324d" x="742.41" y="94.200296" transform="rotate(-0 742.41 94.200296)">仿真与工程核验</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d" transform="translate(687.41 133.144176)">检查实测超调、调节时间</text>
+    <text style="font-size: 10px; font-family: 'Microsoft YaHei'; fill: #17324d" transform="translate(697.41 145.222613)">核对力矩限制与扰动</text>
+   </g>
+   <g id="text_9">
+    <text style="font-size: 14px; font-family: 'Microsoft YaHei'; text-anchor: middle; fill: #17324d" x="427.32" y="31.597069" transform="rotate(-0 427.32 31.597069)">从规格到可验证的控制器：每一步都把要求转成可计算量</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pa5973e0d8a">
+   <rect x="7.2" y="7.2" width="840.24" height="228.24"/>
+  </clipPath>
+ </defs>
+</svg>
