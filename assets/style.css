@@ -156,3 +156,7 @@ body{font-size:17px}
 @media(max-width:1100px){.layout{grid-template-columns:190px minmax(0,1fr)}.main{padding:30px 34px}}
 @media(max-width:720px){body{font-size:16px}.layout{display:block;padding:0 0 45px}.main{padding:23px 19px 36px}.sidebar a{font-size:14px}.prose h1{font-size:25px}.prose h2{font-size:20px}}
 @media print{.layout{display:block;padding:0}.main{padding:0}}
+
+/* 统一两套课程的目录宽度。 */
+@media(min-width:1101px){.layout{grid-template-columns:250px minmax(0,1fr) 295px}}
+@media(min-width:721px) and (max-width:1100px){.layout{grid-template-columns:230px minmax(0,1fr)}}

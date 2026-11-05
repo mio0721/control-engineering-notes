@@ -123,4 +123,4 @@ disp(eig(Ad-Bd*Kd));disp(eig(Ad-Ld*C));
 
 </details>
 
-学习时先完成本课练习并澄清疑问，再进入下一课；网页制作进度不代表学习进度。
+

@@ -211,7 +211,7 @@ def generate_shell(page:Path,title:str,crumb:str,body:str,toc:list,course:Course
                    f'<summary><span class="phase-title">{escape(phase_title)}</span>'
                    f'<small>{escape(phase_note)}</small></summary>')
         if not items:
-            nav.append('<div class="phase-coming">该阶段课程将在学习进度推进后加入。</div>')
+            nav.append('<div class="phase-coming">该阶段课程待补充。</div>')
         for item in items:
             open_attr=' open' if course==item else ''
             nav.append(f'<details class="nav-course"{open_attr}>'
