@@ -9,75 +9,128 @@
 </head><body>
 <header class="mast"><div class="mast-inner"><a class="brand" href="../index.html">机器人控制理论笔记</a><div class="top-actions"><span class="top-indicator">已整理 46 课</span><button id="themeToggle" type="button" class="theme-toggle" aria-label="切换日间与夜间模式" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">夜间模式</span></button></div></div></header>
 <div class="layout">
-<aside class="toc" aria-label="本章目录"><div class="toc-label">本章目录</div><a class="h2" href="#section-1">1. 跟上目标和最终没有误差是两回事</a><a class="h2" href="#section-2">2. 终值定理需要先验条件</a><a class="h2" href="#section-3">3. 型别、参考输入与误差常数要一起看</a><a class="h2" href="#section-4">4. 两个正例与一个反例</a><a class="h3" href="#section-5">4.1 0 型：增益 4 为什么仍有 0.2 误差？</a><a class="h3" href="#section-6">4.2 I 型：位置阶跃能跟上，匀速斜坡仍有固定落后</a><a class="h3" href="#section-7">4.3 II 型不自动意味着稳定</a><a class="h2" href="#section-8">5. 跟踪误差和抗扰误差要分开推</a><a class="h2" href="#section-9">斜坡误差为 0.25，不是“输出停在 0.75”</a><a class="h3" href="#section-10">先预测，再展开核对</a><a class="h2" href="#section-11">交互实验</a><a class="h2" href="#section-12">MATLAB 验证</a><a class="h2" href="#section-13">公式、条件与符号</a><a class="h2" href="#section-14">练习与理解检查</a></aside>
+<aside class="toc" aria-label="本章目录"><div class="toc-label">本章目录</div><a class="h2" href="#section-1">1. 机械臂停下了，就到达目标了吗？</a><a class="h2" href="#section-2">2. 先动手：为什么有的系统最后还差一点？</a><a class="h2" href="#section-3">3. 单位负反馈的误差从哪里来？</a><a class="h2" href="#section-4">4. 0 型例子：目标为 1，为什么最后差 0.2？</a><a class="h2" href="#section-5">5. 只求最后的误差：终值定理</a><a class="h3" href="#section-6">为什么不能直接套？</a><a class="h2" href="#section-7">6. 多一个积分，为什么阶跃误差可以为零？</a><a class="h2" href="#section-8">7. 目标一直移动，还能完全跟上吗？</a><a class="h2" href="#section-9">8. 0 型、I 型、II 型与误差常数</a><a class="h2" href="#section-10">9. 跟踪误差和抗扰误差</a><a class="h2" href="#section-11">10. MATLAB：把刚才的曲线画出来</a><a class="h2" href="#section-12">11. 练习与自查</a></aside>
 <main class="main" id="content"><div class="eyebrow">第 7 课 / 课程讲解</div><div class="chapter-tabs"><a class="active" href="07-稳态误差与终值定理.html">课程讲解</a><a class="" href="../reviews/07-稳态误差与终值定理.html">复习笔记</a><a class="" href="../formulas/07-稳态误差与终值定理.html">公式手册</a></div><article class="prose"><h1>第 7 课：稳态误差与终值定理</h1>
 <blockquote>
-<p>阶段 0 · 接续积分控制，先检查稳定，再计算误差最终是否消失。</p>
+<p>阶段 0 · 从机械臂能否准确到达目标出发，理解稳态误差、积分环节和终值定理。</p>
 </blockquote>
-<p><img alt="概念关系图" src="../courses/07-稳态误差与终值定理/media/concept-dark.svg"/></p>
-<h2 id="section-1">1. 跟上目标和最终没有误差是两回事</h2>
-<p>恒定目标为 1 时，输出最后停在 0.8，意味着稳态误差为 0.2；若输出不断振荡或增长，就不能说“最后差多少”。稳态误差评价长期跟踪精度，不评价超调、速度，也不能代替稳定性判断。</p>
-<p>本课先限定单位负反馈：误差 $e=r-y$，控制器与对象乘积记为开环环路 $L=CG$。由 $Y=LE$ 和 $E=R-Y$ 得：</p>
+<h2 id="section-1">1. 机械臂停下了，就到达目标了吗？</h2>
+<p>想象你让机械臂转到 <strong>1 rad</strong>。它从零开始转动，后来停在 0.8 rad，不再继续移动。它的运动稳定下来了，但距离目标还差 0.2 rad。</p>
+<p>用 $r(t)$ 表示目标位置，$y(t)$ 表示实际位置，二者的差叫作<strong>跟踪误差</strong>：</p>
 <p>$$
-E(s)=\frac{R(s)}{1+L(s)}.
+e(t)=r(t)-y(t).
 $$</p>
-<p>若传感器增益不是 1，比较器误差不再必然等于实际跟踪误差，必须回到信号关系重新推导。</p>
-<h2 id="section-2">2. 终值定理需要先验条件</h2>
-<p>在适用条件下 $e_{ss}=\lim_{s\to0}sE(s)$。对有理模型，常用充分条件是 sE(s) 的全部极点严格位于左半平面。操作顺序是：写 E，检查极点与内部稳定性，再代入极限。代入得到有限数并不能反过来证明定理适用。</p>
-<p>反例 $E(s)=1/(s^2+1)$ 的时域误差是 $\sin t$。形式上 $\lim_{s\to0}sE(s)=0$，但正弦误差没有终值。错在把代数极限当成了时间极限。</p>
-<h2 id="section-3">3. 型别、参考输入与误差常数要一起看</h2>
-<p>型别数的是环路中的净积分环节，而不是对象阶数。先写：</p>
+<p>例如目标为 1 rad、实际位置为 0.8 rad，则误差为 0.2 rad。如果误差过了很长时间趋近于一个固定值，这个值叫<strong>稳态误差</strong>：</p>
 <p>$$
-L(s)=\frac{K\widetilde L(s)}{s^\nu},\qquad 0&lt;|\widetilde L(0)|&lt;\infty.
+e_{ss}=\lim_{t\to\infty}e(t).
 $$</p>
-<p>$ν=0$、1、2 分别称为 0 型、I 型、II 型。控制器中的积分也包括在 L 中。接下来区分参考输入：</p>
-<table>
-<thead>
-<tr>
-<th>参考</th>
-<th>时域表达</th>
-<th>拉普拉斯变换</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>单位阶跃</td>
-<td>$t≥0$ 时为 1</td>
-<td>$1/s$</td>
-</tr>
-<tr>
-<td>单位斜坡</td>
-<td>t</td>
-<td>$1/s^2$</td>
-</tr>
-<tr>
-<td>单位抛物线</td>
-<td>$t^2/2$</td>
-<td>$1/s^3$</td>
-</tr>
-</tbody>
-</table>
-<p>对于单位阶跃，先从误差通道推导：</p>
+<p>下标 ss 是 steady state（稳态）的缩写。系统能稳定停下、停得快、停得准，是需要分别判断的事情。若误差一直振荡、始终没有确定的极限，就不能直接说它有某个稳态误差。</p>
+<h2 id="section-2">2. 先动手：为什么有的系统最后还差一点？</h2>
+<p>下面的交互比较两个单位负反馈环路：0 型 $L(s)=K/(s+1)$，和 I 型 $L(s)=K/[s(s+1)]$。纵轴画的是<strong>误差</strong>，不是机械臂位置。保持 $K=4$，先选单位阶跃，再切换型别。</p>
+<div class="demo" data-demo="bridge-lab" data-mode="steady"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>
+<p>请依次观察：</p>
+<ol>
+<li>选 <strong>0 型、单位阶跃</strong>：误差从 1 逐渐下降，最后接近 0.2。</li>
+<li>保持 $K=4$，改选 <strong>I 型</strong>：误差会经历振荡，但最终趋近于零。</li>
+<li>把输入改成<strong>单位斜坡</strong>：I 型的误差最终接近 0.25。观察时间有限时，曲线末端只是近似值。</li>
+</ol>
+<p>这两个模型用于展示积分环节和输入类型的影响。接下来我们把数值逐步算出来。</p>
+<h2 id="section-3">3. 单位负反馈的误差从哪里来？</h2>
+<p><img alt="单位负反馈中目标、输出与误差的关系" src="../courses/07-稳态误差与终值定理/media/concept-dark.svg"/></p>
+<p>为看清反馈关系，先假设零初始条件、单位负反馈，目标和输出的拉普拉斯变换分别为 $R(s)$、$Y(s)$。把控制器 $C(s)$ 和对象 $G(s)$ 相乘，记为环路传递函数：</p>
+<p>$$
+L(s)=C(s)G(s).
+$$</p>
+<p>误差是目标减输出，而误差通过环路产生输出：</p>
+<p>$$
+E(s)=R(s)-Y(s),\qquad Y(s)=L(s)E(s).
+$$</p>
+<p>将第二个式子代入第一个式子，一步一步整理：</p>
 <p>$$
 \begin{aligned}
-E(s)&amp;=\frac{1}{s[1+L(s)]},\\
-e_{ss}&amp;=\lim_{s\to0}\frac{1}{1+L(s)}.
+E(s)&amp;=R(s)-L(s)E(s),\\
+[1+L(s)]E(s)&amp;=R(s),\\
+E(s)&amp;=\frac{R(s)}{1+L(s)}.
 \end{aligned}
 $$</p>
-<p>如果低频环路增益有限，定义静态位置误差常数，得到：</p>
+<p>这就是本课的起点：<strong>先写出目标输入 $R(s)$ 和环路 $L(s)$，再算误差 $E(s)$。</strong> 如果反馈不是单位反馈，比较点信号未必等于真实的 $r-y$，要重新根据框图推导。</p>
+<h2 id="section-4">4. 0 型例子：目标为 1，为什么最后差 0.2？</h2>
+<p>取交互中的 0 型环路：</p>
 <p>$$
-K_p=\lim_{s\to0}L(s),\qquad e_{ss}=\frac{1}{1+K_p}.
+L(s)=\frac4{s+1}.
 $$</p>
-<p>这里 Kp 是整个环路的误差常数，与 PID 比例增益可能重名，但不一定是同一个数。若有足够积分使低频环路增益趋于无穷，稳定条件下的阶跃误差才趋于零。</p>
-<p>对于单位斜坡：</p>
+<p>目标从 0 跳到 1 并一直保持，叫单位阶跃；它的拉普拉斯变换为 $R(s)=1/s$。代入误差公式：</p>
 <p>$$
 \begin{aligned}
-E(s)&amp;=\frac{1}{s^2[1+L(s)]},\\
-e_{ss}&amp;=\lim_{s\to0}\frac{1}{s[1+L(s)]},\\
-K_v&amp;=\lim_{s\to0}sL(s).
+E(s)&amp;=\frac{1/s}{1+4/(s+1)}\\
+&amp;=\frac{s+1}{s(s+5)}\\
+&amp;=\frac{0.2}{s}+\frac{0.8}{s+5}.
 \end{aligned}
 $$</p>
-<p>稳定 I 型系统的单位斜坡误差为 1/Kv。斜坡幅值每秒增加，控制器即便最终保持固定落后距离，误差也不等于零。</p>
+<p>回到时间域：</p>
+<p>$$
+e(t)=0.2+0.8e^{-5t}.
+$$</p>
+<p>开始时 $e(0)=1$；随着时间增加，指数项 $0.8e^{-5t}$ 逐渐消失，最终只剩 $0.2$。因此目标是 1 时，输出趋于 $1-0.2=0.8$。</p>
+<p>这个闭环的特征方程是 $s+5=0$，极点为 $-5$，所以这里的响应会收敛。增益增大可减小这个例子的误差；增益能否无限增大仍要看实际系统稳定性和执行器限制。</p>
+<h2 id="section-5">5. 只求最后的误差：终值定理</h2>
+<p>每次都求完整的 $e(t)$ 有时比较麻烦。如果满足终值定理条件，可以从 $E(s)$ 直接求最终值：</p>
+<p>$$
+e_{ss}=\lim_{s\to0}sE(s).
+$$</p>
+<p>对上面的例子：</p>
+<p>$$
+\begin{aligned}
+e_{ss}&amp;=\lim_{s\to0}s\frac{s+1}{s(s+5)}\\
+&amp;=\lim_{s\to0}\frac{s+1}{s+5}\\
+&amp;=0.2.
+\end{aligned}
+$$</p>
+<p>这相当于跳过求整条时间曲线，直接找长期结果。</p>
+<h3 id="section-6">为什么不能直接套？</h3>
+<p>例如 $E(s)=1/(s^2+1)$ 对应 $e(t)=\sin t$。形式上计算 $\lim_{s\to0}sE(s)=0$，但 $\sin t$ 一直振荡，并没有最终值。</p>
+<p>对本课的有理函数，要先检查约分后 $sE(s)$ 的极点是否全部严格位于左半平面。还要留意模型中可能被约掉的内部不稳定动态。<strong>先检查条件，再使用终值定理。</strong></p>
+<h2 id="section-7">6. 多一个积分，为什么阶跃误差可以为零？</h2>
+<p>现在选择 I 型环路：</p>
+<p>$$
+L(s)=\frac4{s(s+1)}.
+$$</p>
+<p>其中 $1/s$ 是积分环节。先检查闭环：</p>
+<p>$$
+1+L(s)=0\quad\Longrightarrow\quad s^2+s+4=0.
+$$</p>
+<p>它的根是 $-1/2\pm j\sqrt{15}/2$，实部小于零。对单位阶跃：</p>
+<p>$$
+\begin{aligned}
+E(s)&amp;=\frac{1/s}{1+4/[s(s+1)]}\\
+&amp;=\frac{s+1}{s^2+s+4},\\
+e_{ss}&amp;=\lim_{s\to0}\frac{s(s+1)}{s^2+s+4}=0.
+\end{aligned}
+$$</p>
+<p>直觉上，积分会积累过去的误差。当目标是固定值，积分器可以保留已经积累的作用，帮助提供维持输出所需的输入。这与第 6 课的“保持力矩”相联系。</p>
+<p>注意结论的条件：<strong>本例闭环稳定</strong>。单纯增加积分环节不能保证闭环稳定，也不能忽略实际执行器饱和。</p>
+<details><summary>想一想：目标从 0 跳到 2，最终误差是多少？</summary>
+<p>对同一个稳定模型，输入从单位阶跃变为幅值 2 的阶跃。根据线性系统的比例关系，误差也变成原来的两倍；原来的稳态误差为 0，两倍仍为 0。</p>
+</details>
+<h2 id="section-8">7. 目标一直移动，还能完全跟上吗？</h2>
+<p>固定目标相当于“到达一个位置”；现在让目标每秒增加 1：</p>
+<p>$$
+r(t)=t,\qquad R(s)=\frac1{s^2}.
+$$</p>
+<p>这叫单位斜坡输入。对刚才稳定的 I 型环路：</p>
+<p>$$
+\begin{aligned}
+E(s)&amp;=\frac{1/s^2}{1+4/[s(s+1)]}\\
+&amp;=\frac{s+1}{s(s^2+s+4)},\\
+e_{ss}&amp;=\lim_{s\to0}\frac{s+1}{s^2+s+4}=0.25.
+\end{aligned}
+$$</p>
+<p>这意味着，暂态衰减后，输出和目标都持续增加，输出大约落后 0.25。比如目标到 10 时，输出大约是 9.75；目标继续到 11 时，输出大约是 10.75。<strong>误差为 0.25 不等于输出停在 0.75。</strong></p>
+<p><img alt="同一个 I 型系统跟踪阶跃和斜坡时的误差对照" src="../courses/07-稳态误差与终值定理/media/worked-example-dark.svg"/></p>
+<p>回到上方交互，固定 I 型和 $K=4$，切换阶跃与斜坡，比较误差最终的变化。若斜坡改为 $r(t)=2t$，由于这个线性闭环稳定，误差随输入幅值加倍，稳态误差为 0.5。</p>
+<h2 id="section-9">8. 0 型、I 型、II 型与误差常数</h2>
+<p>系统型别数的是<strong>环路 $L(s)$ 约分后原点极点的个数</strong>。例如 $4/(s+1)$ 是 0 型，$4/[s(s+1)]$ 是 I 型。原点极点可以来自控制器，也可以来自对象。</p>
+<p>下表适用于单位负反馈、对应闭环稳定且终值定理适用的情况。单位抛物线输入指 $r(t)=t^2/2$。</p>
 <table>
 <thead>
 <tr>
@@ -108,91 +161,54 @@ $$</p>
 </tr>
 </tbody>
 </table>
-<p>表格的前提是相关闭环及终值条件成立。Ka 定义为低频 s²L 的极限；表格不能拿来证明稳定。</p>
-<h2 id="section-4">4. 两个正例与一个反例</h2>
-<h3 id="section-5">4.1 0 型：增益 4 为什么仍有 0.2 误差？</h3>
+<p>其中三个<strong>静态误差常数</strong>定义为：</p>
 <p>$$
-L(s)=\frac4{s+1},\qquad
-E(s)=\frac{s+1}{s(s+5)}.
+K_p=\lim_{s\to0}L(s),\qquad
+K_v=\lim_{s\to0}sL(s),\qquad
+K_a=\lim_{s\to0}s^2L(s).
 $$</p>
-<p>将误差变换拆开：</p>
+<p>这里的 $K_p$ 是位置误差常数，和 PID 中的比例增益可能恰好同名，但定义不同。对本课 I 型例子：</p>
 <p>$$
-\begin{aligned}
-E(s)&amp;=\frac{0.2}{s}+\frac{0.8}{s+5},\\
-e(t)&amp;=0.2+0.8e^{-5t}.
-\end{aligned}
+K_v=\lim_{s\to0}\frac4{s+1}=4,\qquad e_{ss}=\frac1{K_v}=0.25.
 $$</p>
-<p>初始误差为 1，衰减后保留 0.2。增大比例增益可以减小该误差，但有限增益并没有让系统凭空多出积分。</p>
-<h3 id="section-6">4.2 I 型：位置阶跃能跟上，匀速斜坡仍有固定落后</h3>
+<p>不要只看型别查表。例如 $L(s)=K/s^2$（$K&gt;0$）虽然是 II 型，闭环极点为 $\pm j\sqrt K$，会持续振荡；此时不能按上表声称稳态误差为零。</p>
+<h2 id="section-10">9. 跟踪误差和抗扰误差</h2>
+<p>前面的推导关注参考输入。如果扰动 $d$ 加在对象输入端，单位负反馈下：</p>
 <p>$$
-L(s)=\frac4{s(s+1)},\qquad
-s^2+s+4=0.
+Y=GC(R-Y)+GD,\qquad
+E=\frac{R}{1+GC}-\frac{GD}{1+GC}.
 $$</p>
-<p>闭环根的实部都为 −0.5，系统稳定。计算两种输入：</p>
-<p>$$
-\begin{aligned}
-\text{单位阶跃：}\quad e_{ss}&amp;=0,\\
-K_v&amp;=\lim_{s\to0}\frac4{s+1}=4,\\
-\text{单位斜坡：}\quad e_{ss}&amp;=\frac14.
-\end{aligned}
-$$</p>
-<p>在交互里，先用同一模型切换阶跃和斜坡，再比较误差曲线。不要把“斜坡误差 0.25”误读为“输出最终停在 0.75”：斜坡输入和输出都还在继续增加。</p>
-<h3 id="section-7">4.3 II 型不自动意味着稳定</h3>
-<p>$$
-L(s)=\frac K{s^2},\qquad s^2+K=0,
-\qquad s=\pm j\sqrt K\quad(K&gt;0).
-$$</p>
-<p>该系统没有渐近稳定，不能套 II 型表格宣称跟踪优良。先判断稳定性，再计算稳态误差，这是本课必须坚持的顺序。</p>
-<h2 id="section-8">5. 跟踪误差和抗扰误差要分开推</h2>
-<p>若扰动 d 加在对象输入端，输出为 $Y=GC(R-Y)+G D$。因此 $E=R/(1+GC)-G D/(1+GC)$。参考信号与扰动通过不同通道影响误差。仅说“有积分，所以所有扰动都能消除”不够，还要交代扰动位置、类型、闭环稳定与执行器限幅。</p>
-<p>工程上，积分器会累积误差，但力矩限幅后，所需平衡输入可能根本无法实现。应回到抗饱和和输入可行性检查，而不是继续增大积分增益。</p>
-<h2 id="section-9">斜坡误差为 0.25，不是“输出停在 0.75”</h2>
-<p>对环路 4/[s(s+1)]，闭环稳定。令参考为 $r(t)=t$，也就是每秒增加 1 个单位。单位斜坡误差的变换为：</p>
-<p>$$
-\begin{aligned}
-E(s)&amp;=\frac{s+1}{s(s^2+s+4)},\\
-\omega_d&amp;=\frac{\sqrt{15}}2,\\
-e(t)&amp;=\frac14+e^{-t/2}\left[-\frac14\cos(\omega_dt)+\frac{7}{8\omega_d}\sin(\omega_dt)\right].
-\end{aligned}
-$$</p>
-<p>指数项衰减后，误差趋于 0.25，而输出近似为 $y(t)=t−0.25$。$t=10$ s 附近，参考约为 10，输出约为 9.75；再过 1 s，两者都继续上升，固定落后量不变。</p>
-<p>图中把阶跃误差与斜坡误差放在同一坐标，注意曲线表示误差，不是输出。阶跃最终误差为零，斜坡最终误差为0.25，同一个闭环会因输入类型不同得到不同结论。</p>
-<p><img alt="本课数值例子的定量对照图" src="../courses/07-稳态误差与终值定理/media/worked-example-dark.svg"/></p>
-<p><strong>读图与操作</strong>：固定 I 型和 $K=4$，在阶跃/斜坡之间切换；预测初始误差，再观察长期误差。不要只看有限仿真终点。</p>
-<p><strong>使用条件</strong>：单位负反馈、零初态、稳定 I 型环路；误差单位与参考单位相同。</p>
-<h3 id="section-10">先预测，再展开核对</h3>
-<p>斜坡速度改成每秒 2 个单位，稳态误差是多少？</p>
-<details><summary>查看思路与答案</summary>
-<p>在线性且相同稳定条件下为 0.5；误差随斜坡斜率成比例。</p>
-</details>
-<h2 id="section-11">交互实验</h2>
-<p>选择 0 型或 I 型模型，再选择单位阶跃或单位斜坡。比较理论稳态误差与有限时间曲线。K 变大不会改变系统型别；斜坡的有限时间误差也不一定已经达到稳态。</p>
-<div class="demo" data-demo="bridge-lab" data-mode="steady"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>
-<h2 id="section-12">MATLAB 验证</h2>
-<div class="code-panel"><div class="code-label">MATLAB</div><pre class="code-highlight"><code><span class="n">s</span><span class="p">=</span><span class="n">tf</span><span class="p">(</span><span class="s">'s'</span><span class="p">);</span><span class="w"> </span><span class="n">L0</span><span class="p">=</span><span class="mi">4</span><span class="o">/</span><span class="p">(</span><span class="n">s</span><span class="o">+</span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="n">L1</span><span class="p">=</span><span class="mi">4</span><span class="o">/</span><span class="p">(</span><span class="n">s</span><span class="o">*</span><span class="p">(</span><span class="n">s</span><span class="o">+</span><span class="mi">1</span><span class="p">));</span>
-<span class="n">S0</span><span class="p">=</span><span class="n">feedback</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">L0</span><span class="p">);</span><span class="w"> </span><span class="n">S1</span><span class="p">=</span><span class="n">feedback</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">L1</span><span class="p">);</span>
-<span class="n">t</span><span class="p">=(</span><span class="mi">0</span><span class="p">:</span><span class="mf">0.01</span><span class="p">:</span><span class="mi">20</span><span class="p">)</span><span class="o">'</span><span class="p">;</span>
-<span class="nb">figure</span><span class="p">;</span><span class="w"> </span><span class="nb">step</span><span class="p">(</span><span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">,</span><span class="n">t</span><span class="p">);</span><span class="w"> </span><span class="n">grid</span><span class="w"> </span><span class="s">on</span><span class="p">;</span><span class="w"> </span><span class="nb">legend</span><span class="p">(</span><span class="s">'0型阶跃误差'</span><span class="p">,</span><span class="s">'I型阶跃误差'</span><span class="p">);</span>
-<span class="nb">figure</span><span class="p">;</span><span class="w"> </span><span class="n">lsim</span><span class="p">(</span><span class="n">S1</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">t</span><span class="p">);</span><span class="w"> </span><span class="n">grid</span><span class="w"> </span><span class="s">on</span><span class="p">;</span><span class="w"> </span><span class="nb">title</span><span class="p">(</span><span class="s">'I型单位斜坡误差：应趋于0.25'</span><span class="p">);</span>
-<span class="nb">disp</span><span class="p">(</span><span class="n">pole</span><span class="p">(</span><span class="n">feedback</span><span class="p">(</span><span class="n">L1</span><span class="p">,</span><span class="mi">1</span><span class="p">)));</span></code></pre></div>
-<p>本例使用 Control System Toolbox。请先预测趋势，再运行程序核对；这里给出可运行示例，不代表已在 MATLAB 中执行。</p>
-<h2 id="section-13">公式、条件与符号</h2>
-<p>$$
-E=\frac{R}{1+L},\qquad e_{ss}=\lim_{s\to0}sE(s).
-$$</p>
-<p>E 为误差的拉普拉斯变换，R 为参考输入变换，$L=CG$ 为单位负反馈环路。终值定理需满足相应极点条件；还应排查隐藏不稳定模态。</p>
-<p>$$
-K_p=\lim_{s\to0}L(s),\quad K_v=\lim_{s\to0}sL(s),\quad K_a=\lim_{s\to0}s^2L(s).
-$$</p>
-<p>分别用于单位阶跃、斜坡、抛物线的误差分析。对于其他幅值，误差按参考输入幅值缩放。型别由环路在原点的净极点数确定，不能直接代表闭环稳定性。</p>
-<h2 id="section-14">练习与理解检查</h2>
+<p>目标和扰动通过不同通道影响误差。判断能否消除扰动，需要说明扰动加在哪里、是什么信号，以及闭环是否稳定；执行器受限时还要检查是否有足够的力矩补偿。</p>
+<h2 id="section-11">10. MATLAB：把刚才的曲线画出来</h2>
+<p>下面使用 Control System Toolbox；先看闭环极点，再分别画误差对阶跃和斜坡的响应。</p>
+<div class="code-panel"><div class="code-label">MATLAB</div><pre class="code-highlight"><code><span class="n">s</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">tf</span><span class="p">(</span><span class="s">'s'</span><span class="p">);</span>
+<span class="n">L0</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">4</span><span class="o">/</span><span class="p">(</span><span class="n">s</span><span class="o">+</span><span class="mi">1</span><span class="p">);</span>
+<span class="n">L1</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">4</span><span class="o">/</span><span class="p">(</span><span class="n">s</span><span class="o">*</span><span class="p">(</span><span class="n">s</span><span class="o">+</span><span class="mi">1</span><span class="p">));</span>
+<span class="n">S0</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">feedback</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">L0</span><span class="p">);</span><span class="w">  </span><span class="c">% 参考输入到误差</span>
+<span class="n">S1</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">feedback</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">L1</span><span class="p">);</span>
+
+<span class="nb">disp</span><span class="p">(</span><span class="n">pole</span><span class="p">(</span><span class="n">feedback</span><span class="p">(</span><span class="n">L1</span><span class="p">,</span><span class="mi">1</span><span class="p">)));</span><span class="w"> </span><span class="c">% 先检查闭环极点</span>
+<span class="n">t</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="p">:</span><span class="mf">0.01</span><span class="p">:</span><span class="mi">20</span><span class="p">)</span><span class="o">'</span><span class="p">;</span>
+<span class="nb">figure</span><span class="p">;</span><span class="w"> </span><span class="nb">step</span><span class="p">(</span><span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">,</span><span class="n">t</span><span class="p">);</span><span class="w"> </span><span class="n">grid</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">legend</span><span class="p">(</span><span class="s">'0型阶跃误差'</span><span class="p">,</span><span class="s">'I型阶跃误差'</span><span class="p">);</span>
+<span class="nb">figure</span><span class="p">;</span><span class="w"> </span><span class="n">lsim</span><span class="p">(</span><span class="n">S1</span><span class="p">,</span><span class="n">t</span><span class="p">,</span><span class="n">t</span><span class="p">);</span><span class="w"> </span><span class="n">grid</span><span class="w"> </span><span class="s">on</span><span class="p">;</span>
+<span class="nb">title</span><span class="p">(</span><span class="s">'I型单位斜坡误差，最终应接近 0.25'</span><span class="p">);</span></code></pre></div>
+<h2 id="section-12">11. 练习与自查</h2>
 <ol>
-<li>求 $L=9/(s+2)$ 的单位阶跃稳态误差，先检查闭环极点。</li>
-<li>求 $L=6/[s(s+3)]$ 的阶跃与斜坡误差。</li>
-<li>解释为什么 $L=K/s^2$ 不能只按 II 型表格下结论。</li>
-<li>把恒定扰动加到对象输入端，重新推导误差通道。</li>
+<li>单位负反馈下，$L=9/(s+2)$。先求闭环极点，再求单位阶跃稳态误差。</li>
+<li>单位负反馈下，$L=6/[s(s+3)]$。先判断稳定性，再求单位阶跃和单位斜坡稳态误差。</li>
+<li>为什么不能仅凭 $L=K/s^2$ 是 II 型，就断定误差最终为零？</li>
+<li>一个系统跟踪单位斜坡时误差趋于 0.25，这是否意味着输出趋于 0.75？请用 $r(t)=t$ 举例。</li>
 </ol>
-<p>完成练习后逐题解释依据，问题澄清后再进入下一课。</p>
+<details><summary>展开答案与核对过程</summary>
+<ol>
+<li>闭环极点为 $-11$；$K_p=9/2$，故单位阶跃误差为 $1/(1+9/2)=2/11$。</li>
+<li>特征方程为 $s^2+3s+6=0$，两根实部为 $-1.5$，闭环稳定。它是 I 型，阶跃误差为 0；$K_v=6/3=2$，单位斜坡误差为 $1/2$。</li>
+<li>对 $K&gt;0$，闭环极点为 $\pm j\sqrt K$，持续振荡，不满足直接应用终值定理的条件。</li>
+<li>不是。暂态衰减后 $y(t)\approx t-0.25$，目标与输出都在增加，两者相差约 0.25。</li>
+</ol>
+</details>
+<p><strong>本课连接：</strong> 第 6 课解释了积分如何积累误差；本课用输入类型、闭环稳定性和终值定理判断长期精度。下一课继续研究 PID 参数与执行器饱和。</p>
 </article><div class="page-footer"><a href="06-积分控制.html">← 上一课</a><a href="08-PID整定与抗饱和.html">下一课 →</a></div></main>
 <nav class="sidebar" aria-label="课程总目录"><div class="sidebar-title">课程总目录</div><a class="nav-home" href="../index.html">首页 · 课程目录</a><div class="group-label">按学习阶段浏览</div><details class="nav-phase" open><summary><span class="phase-title">阶段 0｜经典控制基础与补桥</span><small>第 1–16 课：反馈、PID、稳定性与频域设计</small></summary><details class="nav-course"><summary><span class="course-number">第 1 课</span><span class="course-title">反馈控制与第一个 PD 控制器</span></summary><div class="nav-course-links"><a class="" href="01-反馈控制.html">讲解</a><a class="" href="../reviews/01-反馈控制.html">复习</a><a class="" href="../formulas/01-反馈控制.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 2 课</span><span class="course-title">二阶系统、阻尼比与超调量</span></summary><div class="nav-course-links"><a class="" href="02-二阶系统.html">讲解</a><a class="" href="../reviews/02-二阶系统.html">复习</a><a class="" href="../formulas/02-二阶系统.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 3 课</span><span class="course-title">拉普拉斯变换与传递函数</span></summary><div class="nav-course-links"><a class="" href="03-传递函数.html">讲解</a><a class="" href="../reviews/03-传递函数.html">复习</a><a class="" href="../formulas/03-传递函数.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 4 课</span><span class="course-title">极点、零点与系统稳定性</span></summary><div class="nav-course-links"><a class="" href="04-极点与零点.html">讲解</a><a class="" href="../reviews/04-极点与零点.html">复习</a><a class="" href="../formulas/04-极点与零点.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 5 课</span><span class="course-title">时间响应指标与 PD 控制器参数设计</span></summary><div class="nav-course-links"><a class="" href="05-PD参数设计.html">讲解</a><a class="" href="../reviews/05-PD参数设计.html">复习</a><a class="" href="../formulas/05-PD参数设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 6 课</span><span class="course-title">积分控制、稳态误差与积分饱和</span></summary><div class="nav-course-links"><a class="" href="06-积分控制.html">讲解</a><a class="" href="../reviews/06-积分控制.html">复习</a><a class="" href="../formulas/06-积分控制.html">公式</a></div></details><details class="nav-course" open><summary><span class="course-number">第 7 课</span><span class="course-title">稳态误差与终值定理</span></summary><div class="nav-course-links"><a class="active" href="07-稳态误差与终值定理.html">讲解</a><a class="" href="../reviews/07-稳态误差与终值定理.html">复习</a><a class="" href="../formulas/07-稳态误差与终值定理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 8 课</span><span class="course-title">PID 参数整定与积分抗饱和</span></summary><div class="nav-course-links"><a class="" href="08-PID整定与抗饱和.html">讲解</a><a class="" href="../reviews/08-PID整定与抗饱和.html">复习</a><a class="" href="../formulas/08-PID整定与抗饱和.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 9 课</span><span class="course-title">数字 PID 实现</span></summary><div class="nav-course-links"><a class="" href="09-数字PID实现.html">讲解</a><a class="" href="../reviews/09-数字PID实现.html">复习</a><a class="" href="../formulas/09-数字PID实现.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 10 课</span><span class="course-title">Routh稳定判据</span></summary><div class="nav-course-links"><a class="" href="10-Routh稳定判据.html">讲解</a><a class="" href="../reviews/10-Routh稳定判据.html">复习</a><a class="" href="../formulas/10-Routh稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 11 课</span><span class="course-title">根轨迹与增益设计</span></summary><div class="nav-course-links"><a class="" href="11-根轨迹与增益设计.html">讲解</a><a class="" href="../reviews/11-根轨迹与增益设计.html">复习</a><a class="" href="../formulas/11-根轨迹与增益设计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 12 课</span><span class="course-title">频率响应与 Bode 图</span></summary><div class="nav-course-links"><a class="" href="12-频率响应与Bode图.html">讲解</a><a class="" href="../reviews/12-频率响应与Bode图.html">复习</a><a class="" href="../formulas/12-频率响应与Bode图.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 13 课</span><span class="course-title">Nyquist 稳定判据——沿着曲线判断闭环稳定性</span></summary><div class="nav-course-links"><a class="" href="13-Nyquist稳定判据.html">讲解</a><a class="" href="../reviews/13-Nyquist稳定判据.html">复习</a><a class="" href="../formulas/13-Nyquist稳定判据.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 14 课</span><span class="course-title">增益裕度与相位裕度</span></summary><div class="nav-course-links"><a class="" href="14-增益裕度与相位裕度.html">讲解</a><a class="" href="../reviews/14-增益裕度与相位裕度.html">复习</a><a class="" href="../formulas/14-增益裕度与相位裕度.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 15 课</span><span class="course-title">超前与滞后校正</span></summary><div class="nav-course-links"><a class="" href="15-超前与滞后校正.html">讲解</a><a class="" href="../reviews/15-超前与滞后校正.html">复习</a><a class="" href="../formulas/15-超前与滞后校正.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 16 课</span><span class="course-title">闭环带宽、延迟与鲁棒性</span></summary><div class="nav-course-links"><a class="" href="16-闭环带宽与延迟鲁棒性.html">讲解</a><a class="" href="../reviews/16-闭环带宽与延迟鲁棒性.html">复习</a><a class="" href="../formulas/16-闭环带宽与延迟鲁棒性.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 1｜数学与模型衔接</span><small>第 17–19 课：矩阵、特征值、传递函数与状态空间</small></summary><details class="nav-course"><summary><span class="course-number">第 17 课</span><span class="course-title">矩阵与状态向量——现代控制的数学语言</span></summary><div class="nav-course-links"><a class="" href="17-矩阵与状态向量.html">讲解</a><a class="" href="../reviews/17-矩阵与状态向量.html">复习</a><a class="" href="../formulas/17-矩阵与状态向量.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 18 课</span><span class="course-title">特征值与系统动态</span></summary><div class="nav-course-links"><a class="" href="18-特征值与系统动态.html">讲解</a><a class="" href="../reviews/18-特征值与系统动态.html">复习</a><a class="" href="../formulas/18-特征值与系统动态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 19 课</span><span class="course-title">传递函数到状态空间</span></summary><div class="nav-course-links"><a class="" href="19-传递函数到状态空间.html">讲解</a><a class="" href="../reviews/19-传递函数到状态空间.html">复习</a><a class="" href="../formulas/19-传递函数到状态空间.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 2｜现代线性控制核心</span><small>第 20–31 课：状态响应、反馈、LQR、估计与离散综合</small></summary><details class="nav-course"><summary><span class="course-number">第 20 课</span><span class="course-title">状态空间基础</span></summary><div class="nav-course-links"><a class="" href="20-状态空间基础.html">讲解</a><a class="" href="../reviews/20-状态空间基础.html">复习</a><a class="" href="../formulas/20-状态空间基础.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 21 课</span><span class="course-title">相平面与状态轨迹</span></summary><div class="nav-course-links"><a class="" href="21-相平面与状态轨迹.html">讲解</a><a class="" href="../reviews/21-相平面与状态轨迹.html">复习</a><a class="" href="../formulas/21-相平面与状态轨迹.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 22 课</span><span class="course-title">连续系统离散化</span></summary><div class="nav-course-links"><a class="" href="22-连续系统离散化.html">讲解</a><a class="" href="../reviews/22-连续系统离散化.html">复习</a><a class="" href="../formulas/22-连续系统离散化.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 23 课</span><span class="course-title">可控性与可达状态</span></summary><div class="nav-course-links"><a class="" href="23-可控性与可达状态.html">讲解</a><a class="" href="../reviews/23-可控性与可达状态.html">复习</a><a class="" href="../formulas/23-可控性与可达状态.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 24 课</span><span class="course-title">线性系统的Lyapunov稳定性</span></summary><div class="nav-course-links"><a class="" href="24-线性系统的Lyapunov稳定性.html">讲解</a><a class="" href="../reviews/24-线性系统的Lyapunov稳定性.html">复习</a><a class="" href="../formulas/24-线性系统的Lyapunov稳定性.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 25 课</span><span class="course-title">状态反馈与极点配置</span></summary><div class="nav-course-links"><a class="" href="25-状态反馈与极点配置.html">讲解</a><a class="" href="../reviews/25-状态反馈与极点配置.html">复习</a><a class="" href="../formulas/25-状态反馈与极点配置.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 26 课</span><span class="course-title">LQR最优状态反馈</span></summary><div class="nav-course-links"><a class="" href="26-LQR最优状态反馈.html">讲解</a><a class="" href="../reviews/26-LQR最优状态反馈.html">复习</a><a class="" href="../formulas/26-LQR最优状态反馈.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 27 课</span><span class="course-title">状态反馈的参考跟踪</span></summary><div class="nav-course-links"><a class="" href="27-状态反馈的参考跟踪.html">讲解</a><a class="" href="../reviews/27-状态反馈的参考跟踪.html">复习</a><a class="" href="../formulas/27-状态反馈的参考跟踪.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 28 课</span><span class="course-title">可观测性与输出信息</span></summary><div class="nav-course-links"><a class="" href="28-可观测性与输出信息.html">讲解</a><a class="" href="../reviews/28-可观测性与输出信息.html">复习</a><a class="" href="../formulas/28-可观测性与输出信息.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 29 课</span><span class="course-title">Luenberger状态观测器</span></summary><div class="nav-course-links"><a class="" href="29-Luenberger状态观测器.html">讲解</a><a class="" href="../reviews/29-Luenberger状态观测器.html">复习</a><a class="" href="../formulas/29-Luenberger状态观测器.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 30 课</span><span class="course-title">观测器反馈与分离原理</span></summary><div class="nav-course-links"><a class="" href="30-观测器反馈与分离原理.html">讲解</a><a class="" href="../reviews/30-观测器反馈与分离原理.html">复习</a><a class="" href="../formulas/30-观测器反馈与分离原理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 31 课</span><span class="course-title">离散状态反馈与综合设计</span></summary><div class="nav-course-links"><a class="" href="31-离散状态反馈与综合设计.html">讲解</a><a class="" href="../reviews/31-离散状态反馈与综合设计.html">复习</a><a class="" href="../formulas/31-离散状态反馈与综合设计.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 3｜非线性控制进阶</span><small>第 32–37 课：局部分析、稳定性证明与非线性控制设计</small></summary><details class="nav-course"><summary><span class="course-number">第 32 课</span><span class="course-title">非线性模型与局部线性化</span></summary><div class="nav-course-links"><a class="" href="32-非线性模型与局部线性化.html">讲解</a><a class="" href="../reviews/32-非线性模型与局部线性化.html">复习</a><a class="" href="../formulas/32-非线性模型与局部线性化.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 33 课</span><span class="course-title">非线性Lyapunov与吸引域</span></summary><div class="nav-course-links"><a class="" href="33-非线性Lyapunov与吸引域.html">讲解</a><a class="" href="../reviews/33-非线性Lyapunov与吸引域.html">复习</a><a class="" href="../formulas/33-非线性Lyapunov与吸引域.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 34 课</span><span class="course-title">LaSalle不变集原理</span></summary><div class="nav-course-links"><a class="" href="34-LaSalle不变集原理.html">讲解</a><a class="" href="../reviews/34-LaSalle不变集原理.html">复习</a><a class="" href="../formulas/34-LaSalle不变集原理.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 35 课</span><span class="course-title">反馈线性化与模型误差</span></summary><div class="nav-course-links"><a class="" href="35-反馈线性化与模型误差.html">讲解</a><a class="" href="../reviews/35-反馈线性化与模型误差.html">复习</a><a class="" href="../formulas/35-反馈线性化与模型误差.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 36 课</span><span class="course-title">滑模控制与抖振</span></summary><div class="nav-course-links"><a class="" href="36-滑模控制与抖振.html">讲解</a><a class="" href="../reviews/36-滑模控制与抖振.html">复习</a><a class="" href="../formulas/36-滑模控制与抖振.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 37 课</span><span class="course-title">非线性摆系统综合设计</span></summary><div class="nav-course-links"><a class="" href="37-非线性摆系统综合设计.html">讲解</a><a class="" href="../reviews/37-非线性摆系统综合设计.html">复习</a><a class="" href="../formulas/37-非线性摆系统综合设计.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 4：状态估计与约束控制</span><small>第 38–46 课：Kalman、EKF、滚动优化、MPC 与车辆跟踪</small></summary><details class="nav-course"><summary><span class="course-number">第 38 课</span><span class="course-title">噪声协方差与状态估计</span></summary><div class="nav-course-links"><a class="" href="38-噪声协方差与状态估计.html">讲解</a><a class="" href="../reviews/38-噪声协方差与状态估计.html">复习</a><a class="" href="../formulas/38-噪声协方差与状态估计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 39 课</span><span class="course-title">Kalman滤波的预测与校正</span></summary><div class="nav-course-links"><a class="" href="39-Kalman滤波的预测与校正.html">讲解</a><a class="" href="../reviews/39-Kalman滤波的预测与校正.html">复习</a><a class="" href="../formulas/39-Kalman滤波的预测与校正.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 40 课</span><span class="course-title">Kalman滤波调参与一致性检查</span></summary><div class="nav-course-links"><a class="" href="40-Kalman滤波调参与一致性检查.html">讲解</a><a class="" href="../reviews/40-Kalman滤波调参与一致性检查.html">复习</a><a class="" href="../formulas/40-Kalman滤波调参与一致性检查.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 41 课</span><span class="course-title">EKF与非线性状态估计</span></summary><div class="nav-course-links"><a class="" href="41-EKF与非线性状态估计.html">讲解</a><a class="" href="../reviews/41-EKF与非线性状态估计.html">复习</a><a class="" href="../formulas/41-EKF与非线性状态估计.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 42 课</span><span class="course-title">优化控制与滚动时域</span></summary><div class="nav-course-links"><a class="" href="42-优化控制与滚动时域.html">讲解</a><a class="" href="../reviews/42-优化控制与滚动时域.html">复习</a><a class="" href="../formulas/42-优化控制与滚动时域.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 43 课</span><span class="course-title">线性MPC预测模型与代价</span></summary><div class="nav-course-links"><a class="" href="43-线性MPC预测模型与代价.html">讲解</a><a class="" href="../reviews/43-线性MPC预测模型与代价.html">复习</a><a class="" href="../formulas/43-线性MPC预测模型与代价.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 44 课</span><span class="course-title">MPC约束软化与求解检查</span></summary><div class="nav-course-links"><a class="" href="44-MPC约束软化与求解检查.html">讲解</a><a class="" href="../reviews/44-MPC约束软化与求解检查.html">复习</a><a class="" href="../formulas/44-MPC约束软化与求解检查.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 45 课</span><span class="course-title">车辆横向模型与MPC轨迹跟踪</span></summary><div class="nav-course-links"><a class="" href="45-车辆横向模型与MPC轨迹跟踪.html">讲解</a><a class="" href="../reviews/45-车辆横向模型与MPC轨迹跟踪.html">复习</a><a class="" href="../formulas/45-车辆横向模型与MPC轨迹跟踪.html">公式</a></div></details><details class="nav-course"><summary><span class="course-number">第 46 课</span><span class="course-title">EKF与MPC车辆跟踪综合实验</span></summary><div class="nav-course-links"><a class="" href="46-EKF与MPC车辆跟踪综合实验.html">讲解</a><a class="" href="../reviews/46-EKF与MPC车辆跟踪综合实验.html">复习</a><a class="" href="../formulas/46-EKF与MPC车辆跟踪综合实验.html">公式</a></div></details></details><details class="nav-phase"><summary><span class="phase-title">阶段 5：工程实现与综合实验</span><small>暂留空，后续补充</small></summary><div class="phase-coming">该阶段课程将在学习进度推进后加入。</div></details></nav>
 </div><script data-demo-module="demo-core">

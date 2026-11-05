@@ -138,3 +138,21 @@ a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}.ma
 .image-lightbox-close{position:absolute;top:7px;right:8px;display:grid;place-items:center;width:32px;height:32px;padding:0;border:1px solid rgba(255,255,255,.25);border-radius:50%;background:#303b48;color:#fff;font-size:0;cursor:pointer}.image-lightbox-close::before,.image-lightbox-close::after{content:"";position:absolute;left:50%;top:50%;width:14px;height:1.5px;border-radius:2px;background:currentColor}.image-lightbox-close::before{transform:translate(-50%,-50%) rotate(45deg)}.image-lightbox-close::after{transform:translate(-50%,-50%) rotate(-45deg)}
 .image-lightbox-close:hover{background:#465567}
 @media(max-width:720px){.image-lightbox-panel{max-width:100vw;max-height:100dvh;padding:42px 8px 10px;border-radius:8px}.image-lightbox-image{width:96vw;height:calc(94dvh - 76px)}}
+
+/* Match the reading scale and content width of the algorithm notes. */
+body{font-size:17px}
+.mast-inner{max-width:1510px}
+.layout{max-width:1510px;grid-template-columns:205px minmax(0,1fr) 295px;gap:24px;padding-left:24px;padding-right:24px}
+.main{padding:32px 42px 40px}
+.sidebar a{font-size:14px}
+.nav-phase .phase-title{font-size:14px}
+.nav-phase>summary small,.phase-coming{font-size:12px}
+.toc-label,.toc a{font-size:14px}
+.toc .h3{font-size:13px}
+.prose h1{font-size:29px}.prose h2{font-size:21px}.prose h3{font-size:18px}
+.prose table,.prose blockquote{font-size:16px}
+.prose pre,.prose .code-highlight{font-size:14px}
+.demo-title{font-size:16px}.demo-note,.demo-caption,.demo-meta,.control label{font-size:14px}
+@media(max-width:1100px){.layout{grid-template-columns:190px minmax(0,1fr)}.main{padding:30px 34px}}
+@media(max-width:720px){body{font-size:16px}.layout{display:block;padding:0 0 45px}.main{padding:23px 19px 36px}.sidebar a{font-size:14px}.prose h1{font-size:25px}.prose h2{font-size:20px}}
+@media print{.layout{display:block;padding:0}.main{padding:0}}
