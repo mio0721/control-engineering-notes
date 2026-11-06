@@ -187,7 +187,7 @@ $$</p>
 $$</p>
 <p>例如正饱和时 $e=−0.2$、采样周期0.01 s，若允许积分，z 每步减少0.002 rad·s；这正帮助退出正饱和。若一见饱和就冻结，反而会把已经过大的积分保留住。负饱和时按同样逻辑反向判断。</p>
 <p>图中比较同样增益、同样力矩限制，仅积分策略不同的响应。两者都遵守同一执行器上限，差异来自积分内部状态，不能把抗饱和误解为“允许电机输出更大力矩”。</p>
-<p><img alt="本课数值例子的定量对照图" src="../courses/08-PID整定与抗饱和/media/worked-example-dark.svg"/></p>
+<p><img alt="本课数值例子的定量对照图" src="../courses/stage-0/08-PID整定与抗饱和/media/worked-example-dark.svg"/></p>
 <p><strong>读图与操作</strong>：固定力矩上限，比较普通积分和条件积分；再调低上限。观察超调和恢复，不把某个参数下的改善当成普遍保证。</p>
 <p><strong>使用条件</strong>：条件积分逻辑假定 $K_i&gt;0$、积分状态 z=∫e；若积分状态定义变了，须重新检查符号。</p>
 <div class="demo" data-demo="design"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>

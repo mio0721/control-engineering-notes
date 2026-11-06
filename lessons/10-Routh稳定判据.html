@@ -14,7 +14,7 @@
 <blockquote>
 <p>阶段 0 · 不必求出全部高阶根，也能判断右半平面根数和增益稳定范围。</p>
 </blockquote>
-<p><img alt="概念关系图" src="../courses/10-Routh稳定判据/media/concept-dark.svg"/></p>
+<p><img alt="概念关系图" src="../courses/stage-0/10-Routh稳定判据/media/concept-dark.svg"/></p>
 <h2 id="section-1">1. 二阶经验为什么不够？</h2>
 <p>对二阶多项式 $s^2+a_1s+a_0$，$a_1&gt;0,a_0&gt;0$ 可保证严格稳定。更高阶时，系数全正仍不充分。例如 $s^3+2s^2+s+4$ 的系数全正，Routh 判据却能发现两个右半平面根。</p>
 <p>Routh 表把多项式系数按规则重排，首列符号变化次数等于右半平面根数。先将首项系数归一为正，不要把开环分母误当闭环特征多项式。</p>
@@ -105,7 +105,7 @@
 p(s)=(s+3)(s^2+2),\qquad s=-3,\;\pm j\sqrt2.
 $$</p>
 <p>“右半平面根数为零”仍不能保证严格稳定，因为还可能有虚轴根。Routh、直接求根和边界因式分解承担的是互补检查。</p>
-<p><img alt="本课数值例子的定量对照图" src="../courses/10-Routh稳定判据/media/worked-example-dark.svg"/></p>
+<p><img alt="本课数值例子的定量对照图" src="../courses/stage-0/10-Routh稳定判据/media/worked-example-dark.svg"/></p>
 <p><strong>读图与操作</strong>：从4调到6再到7；先纸上排表，再打开数值结果。边界不按普通首列变号规则硬算。</p>
 <p><strong>使用条件</strong>：实系数特征多项式，首项已归一为正；全零行与首列单零按各自规则处理。</p>
 <h3 id="section-8">先预测，再展开核对</h3>

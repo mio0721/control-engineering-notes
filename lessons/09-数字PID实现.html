@@ -3,7 +3,7 @@
 <link rel="icon" href="../assets/robot-icon.svg" type="image/svg+xml">
 <title>第 9 课 · 数字 PID 实现 · 课程讲解｜机器人控制理论笔记</title>
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('robot-note-theme')||'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
-<link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../courses/09-数字PID实现/demos/design.css">
+<link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../courses/stage-0/09-数字PID实现/demos/design.css">
 <script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true,packages:{'[+]':['base','ams']}},svg:{fontCache:'local'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
 <script defer src="../assets/mathjax-tex-svg.js"></script><script defer src="../assets/theme.js"></script><script defer src="../assets/image-viewer.js"></script>
 </head><body>
@@ -208,7 +208,7 @@ $$</p>
 <p>$$\tau_k=10(0.19)+2(0.0219)-0.5(1)=1.4438\ \mathrm{N\,m}.$$</p>
 <p>若软件误把周期填成0.1 s，差分速度会被算成0.1，积分会变成0.039，输出变为1.928 N·m。同一组传感器读数，因为时间单位错了，控制器表现就变了。</p>
 <p>图中展示零阶保持：每次算出命令后保持到下次更新；点间连成光滑曲线只是绘图习惯，真实数字命令在两次计算之间不会自动插值。</p>
-<p><img alt="本课数值例子的定量对照图" src="../courses/09-数字PID实现/media/worked-example-dark.svg"/></p>
+<p><img alt="本课数值例子的定量对照图" src="../courses/stage-0/09-数字PID实现/media/worked-example-dark.svg"/></p>
 <p><strong>读图与操作</strong>：先用 timing 模式对比真实周期与设定周期，再用 filter 模式比较差分噪声和滤波滞后；一次只改变一个因素。</p>
 <p><strong>使用条件</strong>：位置以 rad、时间以 s；此例无滤波、无饱和，用后向差分估速，矩形法更新积分。</p>
 <h3 id="section-11">先预测，再展开核对</h3>

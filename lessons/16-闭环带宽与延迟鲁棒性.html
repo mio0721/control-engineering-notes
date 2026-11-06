@@ -3,7 +3,7 @@
 <link rel="icon" href="../assets/robot-icon.svg" type="image/svg+xml">
 <title>第 16 课 · 闭环带宽、延迟与鲁棒性 · 课程讲解｜机器人控制理论笔记</title>
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('robot-note-theme')||'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
-<link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../courses/16-闭环带宽与延迟鲁棒性/demos/design.css">
+<link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../courses/stage-0/16-闭环带宽与延迟鲁棒性/demos/design.css">
 <script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true,packages:{'[+]':['base','ams']}},svg:{fontCache:'local'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
 <script defer src="../assets/mathjax-tex-svg.js"></script><script defer src="../assets/theme.js"></script><script defer src="../assets/image-viewer.js"></script>
 </head><body>
@@ -39,7 +39,7 @@ L(s)=C(s)P(s),\qquad
 T(s)=\frac{Y(s)}{R(s)}=\frac{L(s)}{1+L(s)}
 $$</p>
 <p>$L(s)$ 是开环环路，$T(s)$ 是闭环目标到输出的传递函数。带宽通常讨论的是闭环 $T(s)$，因为它直接描述“给目标后，实际输出跟得如何”。</p>
-<p><img alt="闭环系统：从目标输入到实际输出的路径" src="../courses/16-闭环带宽与延迟鲁棒性/media/closed-loop-bandwidth.svg"/></p>
+<p><img alt="闭环系统：从目标输入到实际输出的路径" src="../courses/stage-0/16-闭环带宽与延迟鲁棒性/media/closed-loop-bandwidth.svg"/></p>
 <p>图 1：闭环带宽关心从目标到输出的整体响应速度；开环裕度则用来检查反馈环路的稳定余量。</p>
 <h2 id="section-2">二、带宽是什么：从低频能跟，到高频跟不上</h2>
 <p>先看一个低通型的闭环系统。目标变化很慢时，输出幅值接近目标；频率逐渐升高后，输出幅值开始衰减。</p>
@@ -162,7 +162,7 @@ $$</p>
 \boxed{\phi_d(\omega)=-\omega T_d\quad\text{（弧度）}}
 $$</p>
 <p>所以，纯延迟本身不改变正弦信号的幅值，却让信号落后。频率越高，同样的延迟对应越大的相位滞后。</p>
-<p><img alt="延迟越长，频率越高，产生的额外相位滞后越大" src="../courses/16-闭环带宽与延迟鲁棒性/media/delay-phase-dark.svg"/></p>
+<p><img alt="延迟越长，频率越高，产生的额外相位滞后越大" src="../courses/stage-0/16-闭环带宽与延迟鲁棒性/media/delay-phase-dark.svg"/></p>
 <p>图 2：曲线使用深色底和高对比标注。它只显示纯延迟带来的相位变化，不代表某台机器人的完整 Bode 曲线。</p>
 <p>如果用角度表示：</p>
 <p>$$
@@ -174,7 +174,7 @@ $$</p>
 <li>$\omega=50\,\mathrm{rad/s}$ 时，延迟约带来 $-57.3^\circ$ 相位。</li>
 </ul>
 <p>同样 20 ms，对慢变化影响较小，对快变化可能非常关键。</p>
-<p><img alt="纯延迟的相位滞后随频率增加而增大，延迟越长，曲线下降越快" src="../courses/16-闭环带宽与延迟鲁棒性/media/delay-phase-dark.svg"/></p>
+<p><img alt="纯延迟的相位滞后随频率增加而增大，延迟越长，曲线下降越快" src="../courses/stage-0/16-闭环带宽与延迟鲁棒性/media/delay-phase-dark.svg"/></p>
 <p>图 2：纵轴是延迟额外带来的相位，横轴是角频率。延迟不改幅值，却会在高频处显著消耗相位余量。</p>
 <h2 id="section-7">六、用相位裕度估算延迟余量</h2>
 <p>考虑无额外延迟时的开环：</p>
@@ -216,7 +216,7 @@ $$</p>
 <p>它们相关，却不是同一个数。未加延迟时PM为120°；纯延迟0.1 s不改变开环幅值，却在交越处增加约9.92°滞后：</p>
 <p>$$\Delta\phi=-\omega_{gc}\tau=-0.1732\ \mathrm{rad}\approx-9.92^\circ.$$</p>
 <p>此例的稳定延迟边界可由首个虚轴交点精确算得约1.209 s；在一般复杂系统中，PM/交越频率只是有条件的延迟余量估计。图中比较相对直流归一的闭环幅值和未延迟开环幅值，再单独画延迟损失。</p>
-<p><img alt="本课数值例子的定量对照图" src="../courses/16-闭环带宽与延迟鲁棒性/media/worked-example-dark.svg"/></p>
+<p><img alt="本课数值例子的定量对照图" src="../courses/stage-0/16-闭环带宽与延迟鲁棒性/media/worked-example-dark.svg"/></p>
 <p><strong>读图与操作</strong>：先设延迟为0确认基准，再增加延迟；保持增益不变以区分幅值和相位各发生什么变化。</p>
 <p><strong>使用条件</strong>：相对直流带宽需要有限非零直流值；本例简单环路只有一个正增益交越。</p>
 <h3 id="section-10">先预测，再展开核对</h3>

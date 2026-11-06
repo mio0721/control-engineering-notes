@@ -3,7 +3,7 @@
 <link rel="icon" href="../assets/robot-icon.svg" type="image/svg+xml">
 <title>第 14 课 · 增益裕度与相位裕度 · 课程讲解｜机器人控制理论笔记</title>
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('robot-note-theme')||'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
-<link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../courses/14-增益裕度与相位裕度/demos/design.css">
+<link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../courses/stage-0/14-增益裕度与相位裕度/demos/design.css">
 <script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true,packages:{'[+]':['base','ams']}},svg:{fontCache:'local'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
 <script defer src="../assets/mathjax-tex-svg.js"></script><script defer src="../assets/theme.js"></script><script defer src="../assets/image-viewer.js"></script>
 </head><body>
@@ -49,7 +49,7 @@ $$</p>
 L(j\omega)=-1
 $$</p>
 <p>$-1$ 这个复数有两个特点：模长为 1，相位为 $-180^\circ$（也可写成 $180^\circ$）。此时 $1+L(j\omega)=0$，闭环特征分母在该频率处到达临界。因此我们接下来重点找：</p>
-<p><img alt="单位负反馈的信号流向：参考目标经过比较、控制器和被控对象形成输出，输出经传感器反馈" src="../courses/14-增益裕度与相位裕度/media/feedback-loop.svg"/></p>
+<p><img alt="单位负反馈的信号流向：参考目标经过比较、控制器和被控对象形成输出，输出经传感器反馈" src="../courses/stage-0/14-增益裕度与相位裕度/media/feedback-loop.svg"/></p>
 <p>图 1：裕度分析通常针对环路 $L(s)=C(s)P(s)$；如果传感器动态不可忽略，也要把 $H(s)$ 纳入分析。</p>
 <ul>
 <li>开环幅值何时等于 1，也就是 0 dB？</li>
@@ -69,7 +69,7 @@ $$</p>
 \arg L(j\omega_{pc})=-180^\circ
 $$</p>
 <p>找准这两个点很重要：<strong>PM 在增益交越频率处读；GM 在相位交越频率处读。</strong>不要把两个频率或两种裕度对调。</p>
-<p><img alt="Bode 图示意：0 dB 交越处读取 PM，负 180 度交越处读取 GM" src="../courses/14-增益裕度与相位裕度/media/bode-margins.svg"/></p>
+<p><img alt="Bode 图示意：0 dB 交越处读取 PM，负 180 度交越处读取 GM" src="../courses/stage-0/14-增益裕度与相位裕度/media/bode-margins.svg"/></p>
 <p>图 2：曲线只作读图示意。沿同一频率向另一张图对照，才能读到对应的裕度。</p>
 <h2 id="section-6">四、相位裕度 PM：还可以多滞后多少角度？</h2>
 <p>在 $\omega_{gc}$ 处，开环幅值正好是 1。此时查看相位离 $-180^\circ$ 还差多少：</p>
@@ -127,7 +127,7 @@ $$</p>
 <p>$$GM=\frac1{0.5}=2,\qquad GM_{dB}=20\log_{10}2\approx6.02\ \mathrm{dB}.$$</p>
 <p>2 是幅值倍率，不是2 dB。把增益从4乘以2到8，闭环到达临界，恰好与 Nyquist 的例子相连。PM 的度数和 GM 的 dB 也不能互相相加。</p>
 <p>图中标出同一模型的两个交越位置：幅值图读0 dB处的频率去相位图读PM；相位图读−180°处的频率再去幅值图读GM。</p>
-<p><img alt="本课数值例子的定量对照图" src="../courses/14-增益裕度与相位裕度/media/worked-example-dark.svg"/></p>
+<p><img alt="本课数值例子的定量对照图" src="../courses/stage-0/14-增益裕度与相位裕度/media/worked-example-dark.svg"/></p>
 <p><strong>读图与操作</strong>：调增益时同时记录新的交越频率与PM；不要只把幅值图竖直移动，而把PM固定不变。</p>
 <p><strong>使用条件</strong>：本例开环稳定且交越结构简单；多交越、开环不稳定或延迟系统要结合完整Nyquist分析。</p>
 <h3 id="section-11">先预测，再展开核对</h3>

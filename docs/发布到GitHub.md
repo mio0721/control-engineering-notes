@@ -45,7 +45,7 @@ git push -u origin main
 ## 5. 更新课程
 
 ```powershell
-python build.py
+python tools/build.py
 git add .
 git commit -m "Update course content"
 git push

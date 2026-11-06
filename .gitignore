@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+tests/.checks/
 .venv/
 venv/
 # Local OS/editor files

@@ -14,7 +14,7 @@
 <blockquote>
 <p>阶段 0 · 把增益变化与闭环极点移动、阻尼和响应性能联系起来。</p>
 </blockquote>
-<p><img alt="概念关系图" src="../courses/11-根轨迹与增益设计/media/concept-dark.svg"/></p>
+<p><img alt="概念关系图" src="../courses/stage-0/11-根轨迹与增益设计/media/concept-dark.svg"/></p>
 <h2 id="section-1">1. 固定对象、改变一个增益</h2>
 <p>设单位负反馈环路 $L(s)=KG_0(s)$，$K≥0$。闭环特征式为 $1+KG_0(s)=0$。根轨迹就是 K 从零增大到无穷时，闭环特征根在复平面上的运动轨迹。</p>
 <p>开环极点是轨迹起点，闭环极点是某一 K 对应的点；二者只有在特定极限或参数下才会重合。轨迹显示的是一族闭环系统，不是单个系统的时间轨迹。</p>
@@ -43,7 +43,7 @@ $$</p>
 <p>$$y(t)=1-e^{-t}\left[\cos(\sqrt{K-1}\,t)+\frac{\sin(\sqrt{K-1}\,t)}{\sqrt{K-1}}\right].$$</p>
 <p>指数包络的速率没有随着 K 同时变快，振荡却更快、阻尼比更小。因此第一次到目标更早，并不意味着整个调节过程一定明显缩短。</p>
 <p>若想要−2±j，本例仅靠正比例 K 无法实现，因为轨迹离开实轴后位于 $Re(s)=−1$。设计失败可能来自控制器结构限制，而不是调参不够耐心。</p>
-<p><img alt="本课数值例子的定量对照图" src="../courses/11-根轨迹与增益设计/media/worked-example-dark.svg"/></p>
+<p><img alt="本课数值例子的定量对照图" src="../courses/stage-0/11-根轨迹与增益设计/media/worked-example-dark.svg"/></p>
 <p><strong>读图与操作</strong>：选K=0.5、1、4，对照当前极点和响应；把“增益轨迹”与状态相轨迹分开。</p>
 <p><strong>使用条件</strong>：单参数正增益根轨迹；闭环输入输出模型为 K/(s²+2s+K)，零初态、单位阶跃。</p>
 <h3 id="section-7">先预测，再展开核对</h3>

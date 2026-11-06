@@ -97,7 +97,7 @@ $$</p>
 <p>$$K_iz_{ss}=d\quad\Longrightarrow\quad z_{ss}=\frac24=0.5\ \mathrm{rad\,s}.$$</p>
 <p>这就是积分器的记忆：误差已经消失，先前积累的 z 仍保留，因此仍能输出 2 N·m。它不是“误差为零就清零”。若把 z 每周期重置，保持力矩也会丢失。</p>
 <p>图中从目标处受到阻力开始比较 PD 与 PID，PD 留下静差，PID 在本例稳定参数下恢复目标。下方交互还带限幅，增大阻力时可能失去恢复能力，需要同时看可实现力矩。</p>
-<p><img alt="本课数值例子的定量对照图" src="../courses/06-积分控制/media/worked-example-dark.svg"/></p>
+<p><img alt="本课数值例子的定量对照图" src="../courses/stage-0/06-积分控制/media/worked-example-dark.svg"/></p>
 <p><strong>读图与操作</strong>：先固定 $K_p=16$、阻力2，比较 $K_i=0$ 与 $K_i=4$；再增大阻力。注意演示初始位置与本节静差对照图不同，平衡关系相同。</p>
 <p><strong>使用条件</strong>：阻力方向明确、恒定目标；积分消静差以稳定、无积分泄漏和输入可实现为前提。</p>
 <div class="demo" data-demo="design"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>

@@ -13,14 +13,16 @@ class SiteBuildTest(unittest.TestCase):
         self.tmp=tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root=Path(self.tmp.name)
-        copy2(BASE/'build.py',self.root/'build.py')
+        (self.root/'tools').mkdir()
+        copy2(BASE/'tools'/'build.py',self.root/'tools'/'build.py')
         (self.root/'courses'/'01-示例').mkdir(parents=True)
         (self.root/'assets'/'demos').mkdir(parents=True)
         copy2(BASE/'assets'/'demo-core.js',self.root/'assets'/'demo-core.js')
         (self.root/'assets'/'demos'/'shared.js').write_text("window.NoteDemos.register('shared',()=>{});",encoding='utf8')
         (self.root/'courses'/'01-示例'/'lesson.md').write_text('# 第 1 课：示例\n\n## 开始\n\n公式：$e=q_d-q$\n',encoding='utf8')
     def build(self,expected_success=True):
-        r=subprocess.run([sys.executable,str(self.root/'build.py')],capture_output=True,text=True,cwd=self.root)
+        r=subprocess.run([sys.executable,'-X','utf8',str(self.root/'tools'/'build.py')],
+                         capture_output=True,text=True,encoding='utf8',cwd=self.root)
         if expected_success and r.returncode!=0:self.fail(r.stderr)
         return r
     def test_basic_nav_and_partial_sections(self):
@@ -58,6 +60,17 @@ class SiteBuildTest(unittest.TestCase):
         result=self.build(expected_success=False)
         self.assertNotEqual(result.returncode,0)
         self.assertIn('missing',result.stderr)
+    def test_grouped_course_preserves_urls_and_resource_paths(self):
+        course=self.root/'courses'/'stage-1'/'17-矩阵基础'
+        (course/'media').mkdir(parents=True)
+        (course/'media'/'figure.svg').write_text('<svg/>',encoding='utf8')
+        (course/'course.json').write_text('{"phase":"stage1"}',encoding='utf8')
+        (course/'lesson.md').write_text('# 第 17 课：矩阵基础\n\n![示意](media/figure.svg)',encoding='utf8')
+        self.build()
+        output=self.root/'lessons'/'17-矩阵基础.html'
+        self.assertTrue(output.exists())
+        self.assertIn('../courses/stage-1/17-矩阵基础/media/figure.svg',output.read_text(encoding='utf8'))
+        self.assertIn('lessons/17-矩阵基础.html',(self.root/'index.html').read_text(encoding='utf8'))
     def test_math_latex_percent_check(self):
         (self.root/'courses'/'01-示例'/'lesson.md').write_text('# 测试\n\n$100%$\n',encoding='utf8')
         result=self.build(expected_success=False)

@@ -50,7 +50,7 @@ $$</p>
 <p>所以负频率分支是正频率分支关于实轴的镜像；但它沿完整轮廓的行进方向不能随意反过来。</p>
 <h2 id="section-3">3. 先统一轮廓和计数方向</h2>
 <p>本课采用包围右半平面的顺时针 Nyquist 轮廓：沿虚轴从 −j∞ 向 +j∞ 走，再沿右半平面的大半圆返回。这里两个例子的高频环路值都趋于零，因此大半圆映射收缩到 L 平面原点附近。</p>
-<p><img alt="从 s 平面的轮廓到 L 平面关键点的映射" src="../courses/13-Nyquist稳定判据/media/nyquist-contour-dark.svg"/></p>
+<p><img alt="从 s 平面的轮廓到 L 平面关键点的映射" src="../courses/stage-0/13-Nyquist稳定判据/media/nyquist-contour-dark.svg"/></p>
 <table>
 <thead>
 <tr>
@@ -122,7 +122,7 @@ $$</p>
 $$</p>
 <p>K 变大时，曲线整体按比例放大；负实轴交点向左移动。<strong>交点只是读图线索，最终仍要检查完整曲线及方向。</strong></p>
 <h3 id="section-7">4.3 对照三张图数环绕</h3>
-<p><img alt="MATHTOKENZX18ZX、8、12 的完整 Nyquist 曲线；三图坐标比例一致" src="../courses/13-Nyquist稳定判据/media/nyquist-cubic-dark.svg"/></p>
+<p><img alt="MATHTOKENZX18ZX、8、12 的完整 Nyquist 曲线；三图坐标比例一致" src="../courses/stage-0/13-Nyquist稳定判据/media/nyquist-cubic-dark.svg"/></p>
 <table>
 <thead>
 <tr>
@@ -214,7 +214,7 @@ $$</p>
 \boxed{\left(a+\frac K2\right)^2+b^2=\left(\frac K2\right)^2}.
 $$</p>
 <p>因此圆心是 (−K/2,0)，半径 K/2；最左点是 −K，最右点趋近原点。正频率从 −K 沿下半圆走向原点；连同负频率分支，完整行进方向是逆时针。</p>
-<p><img alt="MATHTOKENZX50ZX、1、2 的圆形映射，箭头表示完整轮廓方向" src="../courses/13-Nyquist稳定判据/media/nyquist-unstable-dark.svg"/></p>
+<p><img alt="MATHTOKENZX50ZX、1、2 的圆形映射，箭头表示完整轮廓方向" src="../courses/stage-0/13-Nyquist稳定判据/media/nyquist-unstable-dark.svg"/></p>
 <h3 id="section-13">5.3 三种增益，对照圆与闭环根</h3>
 <p>闭环特征方程可以直接算：</p>
 <p>$$
@@ -276,7 +276,7 @@ P=1:&amp;\quad Z=P+N=1.
 $$</p>
 <p>这两种结果不矛盾：环绕数不是闭环不稳定根数本身，它还要补上开环已有的右半平面极点。下图固定同一个计数结论，直接比较两种 P 的推理路径。</p>
 <p>对于 K/(s−1)，选K=0.5时圆不包围−1，$P=1$、$N=0$，所以闭环根+0.5；选K=2时，曲线提供一个逆时针环绕，$N=−1$，把计数抵消为Z=0，闭环根−1。看图之前先写P，可以避免把开环稳定对象的经验误搬到开环不稳定对象。</p>
-<p><img alt="本课数值例子的定量对照图" src="../courses/13-Nyquist稳定判据/media/worked-example-dark.svg"/></p>
+<p><img alt="本课数值例子的定量对照图" src="../courses/stage-0/13-Nyquist稳定判据/media/worked-example-dark.svg"/></p>
 <p><strong>读图与操作</strong>：两个交互选同样“不包围”状态，对比P与Z；再用闭环极点图核对。</p>
 <p><strong>使用条件</strong>：沿本课约定的右半平面顺时针轮廓，N以顺时针为正；边界不套普通环绕数。</p>
 <h3 id="section-18">先预测，再展开核对</h3>

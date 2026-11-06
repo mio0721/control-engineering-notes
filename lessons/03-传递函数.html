@@ -118,7 +118,7 @@ y(t)&amp;=\frac12(1-e^{-2t})+e^{-2t}.
 $$</p>
 <p>第一项是零初态下由输入产生的强迫响应，第二项是初态产生的自由响应。二者相加，起点为 1，最后趋于 0.5。若把初值忘掉，只会得到“从 0 上升到 0.5”，起点就错了。</p>
 <p>传递函数仍是 $G(s)=1/(s+2)$，因为它按零初态输入输出关系定义。模型不因初值变成另一个传递函数；只是总响应需要额外加上自由响应。将输入设成零时，剩下的正是初态衰减。</p>
-<p><img alt="本课数值例子的定量对照图" src="../courses/03-传递函数/media/worked-example-dark.svg"/></p>
+<p><img alt="本课数值例子的定量对照图" src="../courses/stage-0/03-传递函数/media/worked-example-dark.svg"/></p>
 <p><strong>读图与操作</strong>：新交互可分别显示强迫响应、自由响应和二者之和。把初值依次设成 0、1、−1，再把输入设成 0。</p>
 <p><strong>使用条件</strong>：连续线性时不变一阶对象，$a&gt;0$；叠加原理要求系统线性。</p>
 <div class="demo" data-demo="transfer-lab"><p class="demo-note">此演示需要 JavaScript。若没有显示，请检查浏览器设置。</p></div>

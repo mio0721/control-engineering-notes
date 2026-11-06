@@ -17,3 +17,12 @@
     apply(next);
   });
 })();
+
+// Load the shared responsive drawer without changing generated lesson markup.
+(() => {
+  const owner=document.currentScript;
+  if(!owner)return;
+  const script=document.createElement('script');
+  script.src=new URL('mobile-panels.js',owner.src).href;
+  document.head.appendChild(script);
+})();

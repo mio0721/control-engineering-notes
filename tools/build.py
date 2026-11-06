@@ -1,7 +1,8 @@
 """离线知识网站生成器 V3。
 
-纯文件扫描: courses/<编号-名称>/{lesson,review,formulas}.md
-可选课程专属交互: courses/<编号-名称>/demos/<名称>.js[.css]
+纯文件扫描: courses/stage-<阶段>/<编号-名称>/{lesson,review,formulas}.md
+兼容直接放在 courses/<编号-名称>/ 下的课程。
+可选课程专属交互: 课程目录/demos/<名称>.js[.css]
 可复用的通用交互: assets/demos/<名称>.js[.css]
 
 在 Markdown 里引用：
@@ -24,7 +25,7 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name, TextLexer
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[1]
 COURSES_DIR = ROOT / 'courses'
 SECTIONS = (
     ('lesson', 'lessons', '课程讲解', '完整讲解'),
@@ -55,11 +56,17 @@ def discover_courses() -> list[Course]:
     result=[]
     if not COURSES_DIR.is_dir():
         raise FileNotFoundError('courses/ 不存在')
-    for directory in sorted((p for p in COURSES_DIR.iterdir() if p.is_dir() and not p.name.startswith('.')),key=order):
+    directories={p.parent for section,*_ in SECTIONS for p in COURSES_DIR.rglob(section+'.md')
+                 if not any(part.startswith('.') for part in p.relative_to(COURSES_DIR).parts)}
+    slugs=set()
+    for directory in sorted(directories,key=order):
         available=tuple(section for section,*_ in SECTIONS if (directory/(section+'.md')).is_file())
         if not available:
             continue
         slug=directory.name
+        if slug in slugs:
+            raise ValueError(f'课程目录名称重复，生成网址会冲突：{slug}')
+        slugs.add(slug)
         n=slug.split('-',1)[0]
         number=int(n) if n.isdigit() else None
         fallback=slug.split('-',1)[-1]
@@ -296,7 +303,8 @@ def clean_stale(courses:list[Course]):
             if html not in expected:html.unlink()
 
 def main():
-    courses=[c for c in discover_courses() if not json.loads((c.folder/'course.json').read_text(encoding='utf8')).get('hidden',False)]
+    courses=[c for c in discover_courses() if not ((c.folder/'course.json').is_file()
+             and json.loads((c.folder/'course.json').read_text(encoding='utf8')).get('hidden',False))]
     clean_stale(courses)
     n=0;demos=set()
     for course in courses:

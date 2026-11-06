@@ -3,7 +3,7 @@
 <link rel="icon" href="../assets/robot-icon.svg" type="image/svg+xml">
 <title>第 12 课 · 频率响应与 Bode 图 · 课程讲解｜机器人控制理论笔记</title>
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('robot-note-theme')||'light'}catch(e){document.documentElement.dataset.theme='light'}</script>
-<link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../courses/12-频率响应与Bode图/demos/design.css">
+<link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../courses/stage-0/12-频率响应与Bode图/demos/design.css">
 <script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']],processEscapes:true,packages:{'[+]':['base','ams']}},svg:{fontCache:'local'},options:{skipHtmlTags:['script','noscript','style','textarea','pre','code']}};</script>
 <script defer src="../assets/mathjax-tex-svg.js"></script><script defer src="../assets/theme.js"></script><script defer src="../assets/image-viewer.js"></script>
 </head><body>
@@ -156,7 +156,7 @@ y_{ss}(t)=0.707\sin(t-\pi/4),\qquad
 20\log_{10}(0.707)\approx-3.01\ \mathrm{dB}.
 $$</p>
 <p>图中只画稳态正弦，已经去掉初态产生的瞬态。若从零初态刚启动，还需叠加一个衰减指数项，不能要求一开始就贴在稳态曲线上。</p>
-<p><img alt="本课数值例子的定量对照图" src="../courses/12-频率响应与Bode图/media/worked-example-dark.svg"/></p>
+<p><img alt="本课数值例子的定量对照图" src="../courses/stage-0/12-频率响应与Bode图/media/worked-example-dark.svg"/></p>
 <p><strong>读图与操作</strong>：先在正弦演示中改变频率，看振幅和相位，再在 Bode 演示中找同一个频率的读数。</p>
 <p><strong>使用条件</strong>：稳定一阶线性对象；正弦稳态解释建立在瞬态已衰减的基础上。</p>
 <h3 id="section-8">先预测，再展开核对</h3>
